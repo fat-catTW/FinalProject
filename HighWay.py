@@ -11,6 +11,22 @@ BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 GREEN = (0, 255, 0)
 
+#Random vehicle position
+RandomVicXPos1 = [80, 140, 200, 260, 320, 380]
+RandomVicXPos2 = [[80, 140],[80, 200], [80, 260], [80, 320], [80, 380], [140, 200], [140, 260], [140, 320], [140, 380], [200, 260], [200, 320], [200, 380], [260, 320], [260, 380],
+                   [320, 380]]
+RandomVicXPos3 = [[80, 140, 200], [80, 140, 260], [80, 140, 320], [80, 140, 380],
+                  [80, 200, 260], [80, 200, 320], [80, 200, 380],
+                  [80, 260, 320], [80, 260, 380],
+                  [80, 320, 380],
+                  [140, 200, 260], [140, 200, 320], [140, 200, 380], 
+                  [140, 260, 320], [140, 260, 380],
+                  [140, 320, 380],
+                  [200, 260, 320], [200, 260, 380],
+                  [200, 320, 380],
+                  [260, 320, 380]]
+
+
 #game init
 pygame.init()
 pygame.mixer.init()
@@ -68,8 +84,8 @@ def draw_text(surf, text, size, x, y):
     surf.blit(text_surface, text_rect)
     
 
-def new_vics():
-    vic = Vehicle()
+def new_vics(x):
+    vic = Vehicle(x)
     all_sprites.add(vic)
     other_vics.add(vic)
     
@@ -140,12 +156,12 @@ class Player(pygame.sprite.Sprite):
             self.rect.top = 0
 
 class Vehicle(pygame.sprite.Sprite):
-    def __init__(self):
+    def __init__(self, x):
         pygame.sprite.Sprite.__init__(self)
         self.image = pygame.transform.scale(random.choice(otherVic_imgs), (50, 100))
         self.image.set_colorkey(BLACK)
         self.rect = self.image.get_rect()
-        self.rect.x = random.randrange(0, WIDTH - self.rect.width)
+        self.rect.x = x
         self.rect.bottom = random.randrange(-180, -100)
         self.speedy = 5
     
@@ -153,10 +169,8 @@ class Vehicle(pygame.sprite.Sprite):
         self.rect.y += self.speedy
         
         if self.rect.top > HEIGHT + 100:
-            self.rect.x = random.randrange(0, WIDTH - self.rect.width)
-            self.rect.top = -200
-            self.image = pygame.transform.scale(random.choice(otherVic_imgs), (50, 100))
-            self.image.set_colorkey(BLACK)
+            self.kill()
+            
             
             
 class Rocket(pygame.sprite.Sprite):
@@ -208,10 +222,6 @@ player = Player()
 all_sprites.add(player)
 
 
-for i in range(3):
-    clock.tick(1)
-    new_vics()
-
 
 #game loop
 
@@ -220,11 +230,43 @@ pygame.mixer.music.play()
 running = True
 score = 0
 
+spawnVicTimer1 = 3000
+spawnVicTimer2 = 4500
+last_now1 = pygame.time.get_ticks()
+last_now2 = pygame.time.get_ticks()
+
 while running:
     
     clock.tick(FPS)
+    now = pygame.time.get_ticks()
     score += 0.1
     
+    #spawn vic
+
+    if now - last_now1 >= spawnVicTimer1: #spawn one vehicle
+        x = random.choice(RandomVicXPos1)
+        new_vics(x)
+        last_now1 = now
+
+    if now - last_now2 >= spawnVicTimer2: #spawn mutiple vehicle
+
+        spawn = random.randint(2,3)
+
+        match spawn:
+            case 2:
+                tempList = random.choice(RandomVicXPos2)
+                last_now2 = now
+                for x in tempList:
+                    new_vics(x)
+            
+            case 3:
+                tempList = random.choice(RandomVicXPos3)
+                last_now2 = now
+                for x in tempList:
+                    new_vics(x)
+
+        
+
     
     #gas consumption
     player.gas -= 0.015
@@ -235,13 +277,14 @@ while running:
     player_crash = pygame.sprite.spritecollide(player, other_vics, True)
     
     for crash in player_crash:
-        new_vics()
+        random.choice(expl_sounds).play()
+        expl = Explosion(crash.rect.center)
+        all_sprites.add(expl)
     
     #Weapon destory vehicle
     weapon_destroy = pygame.sprite.groupcollide(player_weapon, other_vics, True, True)
     
     for boom in weapon_destroy:
-        new_vics()
         random.choice(expl_sounds).play()
         expl = Explosion(boom.rect.center)
         all_sprites.add(expl)
