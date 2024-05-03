@@ -47,6 +47,8 @@ otherVic_imgs = []
 for i in range(7):
     otherVic_imgs.append(pygame.image.load(os.path.join("img", f"Vic{i}.png")).convert())
 
+RandomBox_img = pygame.image.load(os.path.join("img", "RandomBox.png")).convert()
+
 RPG_rocket = pygame.image.load(os.path.join("img", "RPG.png")).convert()
 RPG_rocket.set_colorkey(BLACK)
 
@@ -66,6 +68,10 @@ turning_sound.set_volume(0.1)
 player_turning = pygame.mixer.Channel(0)
 player_rocket_sound = pygame.mixer.Sound(os.path.join("Sounds", "RPG_fire.mp3"))
 
+
+player_get_RPG_sound = pygame.mixer.Sound(os.path.join("Sounds", "RocketLauncher.mp3"))
+player_get_RPG_sound.set_volume(0.8)
+
 expl_sounds = []
 for i in range(2):
     expl_sounds.append(pygame.mixer.Sound(os.path.join("Sounds", f"Explode{i}.wav")))
@@ -73,7 +79,7 @@ for i in range(2):
 pygame.mixer.music.load(os.path.join("Sounds", "Hey.mp3"))
 
 #functions
-font_name = pygame.font.match_font("arial")
+font_name = pygame.font.match_font("arial")#setting 
 def draw_text(surf, text, size, x, y):
 
     font = pygame.font.Font(font_name, size)
@@ -88,6 +94,14 @@ def new_vics(x):
     vic = Vehicle(x)
     all_sprites.add(vic)
     other_vics.add(vic)
+
+
+def new_RandomBox(x):
+    RB = RandomBox(x)
+    all_sprites.add(RB)
+    RandomBox_sprites.add(RB)
+
+
     
 def draw_gas(surf, gas, x, y):
     if gas < 0:
@@ -162,7 +176,7 @@ class Vehicle(pygame.sprite.Sprite):
         self.image.set_colorkey(BLACK)
         self.rect = self.image.get_rect()
         self.rect.x = x
-        self.rect.bottom = random.randrange(-180, -100)
+        self.rect.bottom = random.randrange(-180, -150)
         self.speedy = 5
     
     def update(self):
@@ -171,8 +185,24 @@ class Vehicle(pygame.sprite.Sprite):
         if self.rect.top > HEIGHT + 100:
             self.kill()
             
-            
-            
+
+class RandomBox(pygame.sprite.Sprite):
+    def __init__(self, x):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.transform.scale(RandomBox_img, (40,40))
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.bottom = -180
+        self.speedy = 5
+    
+    def update(self):
+        self.rect.y += self.speedy
+        
+        if self.rect.top > HEIGHT + 100:
+            self.kill()
+
+
+
 class Rocket(pygame.sprite.Sprite):
     def __init__(self, x, y):
         pygame.sprite.Sprite.__init__(self)
@@ -217,6 +247,7 @@ class Explosion(pygame.sprite.Sprite):
 all_sprites = pygame.sprite.Group()
 other_vics = pygame.sprite.Group()
 player_weapon = pygame.sprite.Group()
+RandomBox_sprites = pygame.sprite.Group()
 
 player = Player()
 all_sprites.add(player)
@@ -234,6 +265,9 @@ spawnVicTimer1 = 3000
 spawnVicTimer2 = 4500
 last_now1 = pygame.time.get_ticks()
 last_now2 = pygame.time.get_ticks()
+
+spawnRandBoxTimer = 2000
+RandomBox_last_spawn = pygame.time.get_ticks()
 
 while running:
     
@@ -265,7 +299,11 @@ while running:
                 for x in tempList:
                     new_vics(x)
 
-        
+    #spawn RandomBox
+    if now - RandomBox_last_spawn >= spawnRandBoxTimer:
+        x = random.choice(RandomVicXPos1)
+        new_RandomBox(x)
+        RandomBox_last_spawn = now
 
     
     #gas consumption
@@ -281,6 +319,13 @@ while running:
         expl = Explosion(crash.rect.center)
         all_sprites.add(expl)
     
+    #Player collide with randomBox
+    player_hit_RandomBox = pygame.sprite.spritecollide(player, RandomBox_sprites, True)
+
+    for hits in player_hit_RandomBox:
+        player_get_RPG_sound.play()
+
+
     #Weapon destory vehicle
     weapon_destroy = pygame.sprite.groupcollide(player_weapon, other_vics, True, True)
     
@@ -288,6 +333,7 @@ while running:
         random.choice(expl_sounds).play()
         expl = Explosion(boom.rect.center)
         all_sprites.add(expl)
+    
     
     
     #input
