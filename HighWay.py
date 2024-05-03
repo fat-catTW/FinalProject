@@ -10,6 +10,9 @@ FPS = 100
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 GREEN = (0, 255, 0)
+LANE1 = 100
+LANE2 = WIDTH / 2
+LANE3 = WIDTH - 100
 
 #game init
 pygame.init()
@@ -18,6 +21,7 @@ pygame.mixer.set_num_channels(10)
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 clock = pygame.time.Clock()
 pygame.display.set_caption("HighWay69")
+speeda = 0
 
 
 
@@ -39,6 +43,10 @@ for i in range(9):
     expl_img = pygame.image.load(os.path.join("img", f"expl{i}.png")).convert()
     expl_img.set_colorkey(BLACK)
     expl_anim.append(pygame.transform.scale(expl_img, (90, 90)))
+    
+roadblock_img = []
+for i in range(4):
+    otherVic_imgs.append(pygame.image.load(os.path.join("img", f"roadblock{i}.png")).convert())
 
 
 
@@ -147,13 +155,28 @@ class Vehicle(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = random.randrange(0, WIDTH - self.rect.width)
         self.rect.bottom = random.randrange(-180, -100)
-        self.speedy = 5
+        self.speedy = 2
+        
+        lane = random.randrange(1, 4)
+        if(lane == 1):
+            self.rect.centerx = LANE1
+        elif(lane == 2):
+            self.rect.centerx = LANE2
+        else:
+            self.rect.centerx = LANE3
     
     def update(self):
-        self.rect.y += self.speedy
+        self.rect.y += self.speedy + speeda
         
         if self.rect.top > HEIGHT + 100:
-            self.rect.x = random.randrange(0, WIDTH - self.rect.width)
+            lane = random.randrange(1, 4)
+            if(lane == 1):
+                self.rect.centerx = LANE1
+            elif(lane == 2):
+                self.rect.centerx = LANE2
+            else:
+                self.rect.centerx = LANE3
+
             self.rect.top = -200
             self.image = pygame.transform.scale(random.choice(otherVic_imgs), (50, 100))
             self.image.set_colorkey(BLACK)
@@ -198,11 +221,42 @@ class Explosion(pygame.sprite.Sprite):
                 self.rect = self.image.get_rect()
                 self.rect.center = center
         
+class Roadblocks(pygame.sprite.Sprite):
+    def __init__(self):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.transform.scale(random.choice(roadblock_img), (50, 100))
+        self.image.set_colorkey(BLACK)
+        self.rect = self.image.get_rect()
+        self.speedy = 3     #路障的初始速度(因為在道路上靜止，所以相對來說速度更快)
+        lane = random.randrange(1, 4)
+        if(lane == 1):
+            self.rect.centerx = LANE1
+        elif(lane == 2):
+            self.rect.centerx = LANE2
+        else:
+            self.rect.centerx = LANE3
+    
+    def update(self):
+        self.rect.y += self.speedy + speeda
+        
+        if self.rect.top > HEIGHT + 100:
+            lane = random.randrange(1, 4)
+            if(lane == 1):
+                self.rect.centerx = LANE1
+            elif(lane == 2):
+                self.rect.centerx = LANE2
+            else:
+                self.rect.centerx = LANE3
+            
+            self.rect.top = -200
+            self.image = pygame.transform.scale(random.choice(roadblock_img), (50, 100))
+            self.image.set_colorkey(BLACK)
     
 
 all_sprites = pygame.sprite.Group()
 other_vics = pygame.sprite.Group()
 player_weapon = pygame.sprite.Group()
+road_blocks = pygame.sprite.Group()
 
 player = Player()
 all_sprites.add(player)
@@ -224,6 +278,12 @@ while running:
     
     clock.tick(FPS)
     score += 0.1
+    score_increament += 1
+    
+    #每5秒提升0.5的速度
+    if(score_increament >= 10 * FPS):
+        speeda += 0.5
+        score_increament = 0
     
     
     #gas consumption
