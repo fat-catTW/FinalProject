@@ -43,6 +43,9 @@ player_mini_img = pygame.transform.scale(player_img, (6, 12))
 player_mini_img.set_colorkey(BLACK)
 pygame.display.set_icon(player_mini_img)
 
+player_BubbleShield = pygame.image.load(os.path.join("img", "BubbleShield.png")).convert()
+player_BubbleShield.set_colorkey(BLACK)
+
 otherVic_imgs = []
 for i in range(7):
     otherVic_imgs.append(pygame.image.load(os.path.join("img", f"Vic{i}.png")).convert())
@@ -71,6 +74,9 @@ player_rocket_sound = pygame.mixer.Sound(os.path.join("Sounds", "RPG_fire.mp3"))
 
 player_get_RPG_sound = pygame.mixer.Sound(os.path.join("Sounds", "RocketLauncher.mp3"))
 player_get_RPG_sound.set_volume(0.8)
+
+player_get_shield_sound = pygame.mixer.Sound(os.path.join("Sounds", "BigBoy.mp3"))
+player_get_shield_sound.set_volume(0.8)
 
 expl_sounds = []
 for i in range(2):
@@ -101,6 +107,10 @@ def new_RandomBox(x):
     all_sprites.add(RB)
     RandomBox_sprites.add(RB)
 
+def new_Shield():
+    shield = Player_Shield()
+    all_sprites.add(shield)
+    player_shield.add(shield)
 
     
 def draw_gas(surf, gas, x, y):
@@ -169,6 +179,31 @@ class Player(pygame.sprite.Sprite):
         if self.rect.top < 0:
             self.rect.top = 0
 
+class Player_Shield(pygame.sprite.Sprite):
+    def __init__(self):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.transform.scale(player_BubbleShield, (120,120))
+        self.image.set_colorkey(BLACK)
+        self.rect = self.image.get_rect()
+        self.rect.centerx = player.rect.centerx
+        self.rect.centery = player.rect.centery
+        self.spawn_time = pygame.time.get_ticks()
+        self.duration = 8000
+
+        pygame.mixer.music.set_volume(0)
+        player_get_shield_sound.play()
+
+    
+    def update(self):
+        self.rect.centerx = player.rect.centerx
+        self.rect.centery = player.rect.centery
+        now = pygame.time.get_ticks()
+        if now - self.spawn_time >= self.duration:
+            pygame.mixer.music.set_volume(1)
+            self.kill()
+
+
+
 class Vehicle(pygame.sprite.Sprite):
     def __init__(self, x):
         pygame.sprite.Sprite.__init__(self)
@@ -190,6 +225,7 @@ class RandomBox(pygame.sprite.Sprite):
     def __init__(self, x):
         pygame.sprite.Sprite.__init__(self)
         self.image = pygame.transform.scale(RandomBox_img, (40,40))
+        self.type = random.choice(["RPG", "Shield"])
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.bottom = -180
@@ -247,6 +283,7 @@ class Explosion(pygame.sprite.Sprite):
 all_sprites = pygame.sprite.Group()
 other_vics = pygame.sprite.Group()
 player_weapon = pygame.sprite.Group()
+player_shield = pygame.sprite.Group()
 RandomBox_sprites = pygame.sprite.Group()
 
 player = Player()
@@ -323,19 +360,31 @@ while running:
     player_hit_RandomBox = pygame.sprite.spritecollide(player, RandomBox_sprites, True)
 
     for hits in player_hit_RandomBox:
-        player_get_RPG_sound.play()
+        if hits.type == "RPG":
+            player_get_RPG_sound.play()
+        
+        if hits.type == "Shield":
+            new_Shield()
 
 
-    #Weapon destory vehicle
-    weapon_destroy = pygame.sprite.groupcollide(player_weapon, other_vics, True, True)
+    #RPG destory vehicle
+    weapon_destroy = pygame.sprite.groupcollide(other_vics, player_weapon, True, True)
     
     for boom in weapon_destroy:
         random.choice(expl_sounds).play()
         expl = Explosion(boom.rect.center)
         all_sprites.add(expl)
     
+    #Shield destroy vehicle
+    shield_destroy = pygame.sprite.groupcollide(other_vics, player_shield, True, False)
     
+    for boom in shield_destroy:
+        random.choice(expl_sounds).play()
+        expl = Explosion(boom.rect.center)
+        all_sprites.add(expl)
     
+
+
     #input
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
