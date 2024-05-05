@@ -34,7 +34,7 @@ pygame.mixer.set_num_channels(10)
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 clock = pygame.time.Clock()
 pygame.display.set_caption("HighWay69")
-
+accelerate = 0.0
 
 
 #load image
@@ -61,7 +61,9 @@ for i in range(9):
     expl_img.set_colorkey(BLACK)
     expl_anim.append(pygame.transform.scale(expl_img, (90, 90)))
 
-
+roadblock_img = []
+for i in range(4):
+    roadblock_img.append(pygame.image.load(os.path.join("img", f"roadblock{i}.png")).convert())
 
 
 #load sound
@@ -101,7 +103,6 @@ def new_vics(x):
     all_sprites.add(vic)
     other_vics.add(vic)
 
-
 def new_RandomBox(x):
     RB = RandomBox(x)
     all_sprites.add(RB)
@@ -111,7 +112,11 @@ def new_Shield():
     shield = Player_Shield()
     all_sprites.add(shield)
     player_shield.add(shield)
-
+    
+def new_roadblock(x):
+    rdb = Roadblocks(x)
+    all_sprites.add(rdb)
+    other_vics.add(rdb)
     
 def draw_gas(surf, gas, x, y):
     if gas < 0:
@@ -212,10 +217,10 @@ class Vehicle(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.bottom = random.randrange(-180, -150)
-        self.speedy = 5
+        self.speedy = 2
     
     def update(self):
-        self.rect.y += self.speedy
+        self.rect.y += self.speedy + accelerate
         
         if self.rect.top > HEIGHT + 100:
             self.kill()
@@ -229,10 +234,10 @@ class RandomBox(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.bottom = -180
-        self.speedy = 5
+        self.speedy = 4
     
     def update(self):
-        self.rect.y += self.speedy
+        self.rect.y += self.speedy +accelerate
         
         if self.rect.top > HEIGHT + 100:
             self.kill()
@@ -278,6 +283,22 @@ class Explosion(pygame.sprite.Sprite):
                 self.rect = self.image.get_rect()
                 self.rect.center = center
         
+        
+class Roadblocks(pygame.sprite.Sprite):
+    def __init__(self, x):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.transform.scale(random.choice(roadblock_img), (50, 100))
+        self.image.set_colorkey(BLACK)
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.bottom = 0
+        self.speedy = 3     #路障的初始速度(因為在道路上靜止，所以相對來說速度更快)
+    
+    def update(self):
+        self.rect.y += self.speedy + accelerate
+        
+        if self.rect.top > HEIGHT + 100:
+            self.kill()
     
 
 all_sprites = pygame.sprite.Group()
@@ -285,6 +306,7 @@ other_vics = pygame.sprite.Group()
 player_weapon = pygame.sprite.Group()
 player_shield = pygame.sprite.Group()
 RandomBox_sprites = pygame.sprite.Group()
+road_blocks = pygame.sprite.Group()
 
 player = Player()
 all_sprites.add(player)
@@ -297,6 +319,7 @@ pygame.mixer.music.play()
 
 running = True
 score = 0
+score_increament = 0
 
 spawnVicTimer1 = 3000
 spawnVicTimer2 = 4500
@@ -306,11 +329,20 @@ last_now2 = pygame.time.get_ticks()
 spawnRandBoxTimer = 2000
 RandomBox_last_spawn = pygame.time.get_ticks()
 
+genRoadblockTimer = 1500
+last_Roadblocks = pygame.time.get_ticks()
+
 while running:
     
     clock.tick(FPS)
     now = pygame.time.get_ticks()
     score += 0.1
+    score_increament += 1
+    
+    #speed up
+    if(score_increament >= 15 * FPS):
+        accelerate += 1
+        score_increament = 0
     
     #spawn vic
 
@@ -341,6 +373,22 @@ while running:
         x = random.choice(RandomVicXPos1)
         new_RandomBox(x)
         RandomBox_last_spawn = now
+        
+    #generate roadblocks
+    if now - last_Roadblocks >= genRoadblockTimer:
+        x = random.randint(1, 3)
+        
+        if x == 1:  #generate roadblock on the left side
+            new_roadblock(0)
+            last_Roadblocks = now
+        
+        elif x == 2:
+            new_roadblock(WIDTH - 50)   #generate roadblock on the right side
+            last_Roadblocks = now
+            
+        else:   #not generate roadblock
+            last_Roadblocks = now
+            
 
     
     #gas consumption
@@ -365,6 +413,14 @@ while running:
         
         if hits.type == "Shield":
             new_Shield()
+            
+    #Player collide with roadblocks
+    roadblock_crash = pygame.sprite.spritecollide(player, road_blocks, True)
+    
+    for crash in roadblock_crash:
+        random.choice(expl_sounds).play()
+        expl = Explosion(crash.rect.center)
+        all_sprites.add(expl)
 
 
     #RPG destory vehicle
