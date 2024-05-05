@@ -65,6 +65,9 @@ roadblock_img = []
 for i in range(4):
     roadblock_img.append(pygame.image.load(os.path.join("img", f"roadblock{i}.png")).convert())
 
+HP_img = pygame.image.load(os.path.join("img", "hp.png")).convert()
+HP_img = pygame.transform.scale(HP_img, (20, 20))
+HP_img.set_colorkey((192, 192, 192))
 
 #load sound
 turning_sound = pygame.mixer.Sound(os.path.join("Sounds", "CarTurn.mp3"))
@@ -86,6 +89,8 @@ for i in range(2):
 
 pygame.mixer.music.load(os.path.join("Sounds", "Hey.mp3"))
 
+hp_gain_sound = pygame.mixer.Sound(os.path.join("Sounds", "hpGain.mp3"))
+
 #functions
 font_name = pygame.font.match_font("arial")#setting 
 def draw_text(surf, text, size, x, y):
@@ -97,7 +102,6 @@ def draw_text(surf, text, size, x, y):
     text_rect.top = y
     surf.blit(text_surface, text_rect)
     
-
 def new_vics(x):
     vic = Vehicle(x)
     all_sprites.add(vic)
@@ -128,6 +132,23 @@ def draw_gas(surf, gas, x, y):
     fill_rect = pygame.Rect(x, y, fill, BAR_HEIGHT)
     pygame.draw.rect(surf, GREEN, fill_rect)
     pygame.draw.rect(surf, BLACK, outline_rect, 2)
+    
+def draw_hp(surf, hp):
+    if hp > 3:
+        hp = 3
+    
+    if hp == 3:
+        surf.blit(HP_img, (WIDTH - 50, 10))
+        surf.blit(HP_img, (WIDTH - 75, 10))
+        surf.blit(HP_img, (WIDTH - 100, 10))
+        
+    elif hp == 2:
+        surf.blit(HP_img, (WIDTH - 50, 10))
+        surf.blit(HP_img, (WIDTH - 75, 10))
+        
+    elif hp == 1:
+        surf.blit(HP_img, (WIDTH - 50, 10))
+    
 
 
 #class
@@ -230,7 +251,7 @@ class RandomBox(pygame.sprite.Sprite):
     def __init__(self, x):
         pygame.sprite.Sprite.__init__(self)
         self.image = pygame.transform.scale(RandomBox_img, (40,40))
-        self.type = random.choice(["RPG", "Shield"])
+        self.type = random.choice(["RPG", "Shield", "Health"])
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.bottom = -180
@@ -321,6 +342,8 @@ running = True
 score = 0
 score_increament = 0
 
+hp = 3
+
 spawnVicTimer1 = 3000
 spawnVicTimer2 = 4500
 last_now1 = pygame.time.get_ticks()
@@ -389,12 +412,12 @@ while running:
         else:   #not generate roadblock
             last_Roadblocks = now
             
-
-    
+            
     #gas consumption
     player.gas -= 0.015
     if(player.gas <= 0):
         running = False
+        
     
     #Player collide with vehicle
     player_crash = pygame.sprite.spritecollide(player, other_vics, True)
@@ -403,16 +426,21 @@ while running:
         random.choice(expl_sounds).play()
         expl = Explosion(crash.rect.center)
         all_sprites.add(expl)
+        hp -= 1
     
     #Player collide with randomBox
     player_hit_RandomBox = pygame.sprite.spritecollide(player, RandomBox_sprites, True)
-
+    
     for hits in player_hit_RandomBox:
         if hits.type == "RPG":
             player_get_RPG_sound.play()
         
         if hits.type == "Shield":
             new_Shield()
+            
+        if hits.type == "Health":
+            hp += 1
+            hp_gain_sound.play()
             
     #Player collide with roadblocks
     roadblock_crash = pygame.sprite.spritecollide(player, road_blocks, True)
@@ -421,7 +449,11 @@ while running:
         random.choice(expl_sounds).play()
         expl = Explosion(crash.rect.center)
         all_sprites.add(expl)
+        hp -= 1
 
+    #hp check
+    if(hp <= 0):
+        running = False
 
     #RPG destory vehicle
     weapon_destroy = pygame.sprite.groupcollide(other_vics, player_weapon, True, True)
@@ -460,6 +492,7 @@ while running:
     all_sprites.draw(screen)
     draw_gas(screen, player.gas, 10, 10)
     draw_text(screen, str(int(score)), 18, WIDTH/2, 10)
+    draw_hp(screen, hp)
     pygame.display.update()
 
 
