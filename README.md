@@ -5,6 +5,7 @@ Player:
 2. Gas cunsumption bar is made.
 3. Score board is made.
 4. HP is made.
+5. Rocket amount indicator is made.
 
 Obstacle:
 1. Civilian vehicles are able to spawn randomly(Can spawn 1, 2 or 3 vehicle at a time).
