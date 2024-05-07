@@ -43,6 +43,13 @@ player_mini_img = pygame.transform.scale(player_img, (6, 12))
 player_mini_img.set_colorkey(BLACK)
 pygame.display.set_icon(player_mini_img)
 
+player_onFire_ani = []
+for i in range(12):
+    onFire_img = pygame.image.load(os.path.join("img", f"onFire_{i}.png")).convert()
+    onFire_img.set_colorkey(BLACK)
+    player_onFire_ani.append(pygame.transform.scale(onFire_img, (60, 60)))
+
+
 player_BubbleShield = pygame.image.load(os.path.join("img", "BubbleShield.png")).convert()
 player_BubbleShield.set_colorkey(BLACK)
 
@@ -54,6 +61,13 @@ RandomBox_img = pygame.image.load(os.path.join("img", "RandomBox.png")).convert(
 
 RPG_rocket = pygame.image.load(os.path.join("img", "RPG.png")).convert()
 RPG_rocket.set_colorkey(BLACK)
+RPG_remain3 = pygame.transform.scale(pygame.image.load(os.path.join("img", "RPG_3.png")).convert(), (30, 30))
+RPG_remain2 = pygame.transform.scale(pygame.image.load(os.path.join("img", "RPG_2.png")).convert(), (30, 30))
+RPG_remain1 = pygame.transform.scale(pygame.image.load(os.path.join("img", "RPG_1.png")).convert(), (30, 30))
+RPG_remain3.set_colorkey(BLACK)
+RPG_remain2.set_colorkey(BLACK)
+RPG_remain1.set_colorkey(BLACK)
+
 
 expl_anim = []
 for i in range(9):
@@ -72,9 +86,10 @@ HP_img.set_colorkey((192, 192, 192))
 #load sound
 turning_sound = pygame.mixer.Sound(os.path.join("Sounds", "CarTurn.mp3"))
 turning_sound.set_volume(0.1)
-
 player_turning = pygame.mixer.Channel(0)
+
 player_rocket_sound = pygame.mixer.Sound(os.path.join("Sounds", "RPG_fire.mp3"))
+player_NoAmmo_sound = pygame.mixer.Sound(os.path.join("Sounds", "AmmoEmpty.mp3"))
 
 
 player_get_RPG_sound = pygame.mixer.Sound(os.path.join("Sounds", "RocketLauncher.mp3"))
@@ -82,10 +97,15 @@ player_get_RPG_sound.set_volume(0.8)
 
 player_get_shield_sound = pygame.mixer.Sound(os.path.join("Sounds", "BigBoy.mp3"))
 player_get_shield_sound.set_volume(0.8)
+shield_BigBoy_sound = pygame.mixer.Channel(1)
 
 expl_sounds = []
 for i in range(2):
     expl_sounds.append(pygame.mixer.Sound(os.path.join("Sounds", f"Explode{i}.wav")))
+
+onFire_scream_sound = []
+for i in range(7):
+    onFire_scream_sound.append(pygame.mixer.Sound(os.path.join("Sounds", f"onFire{i}.wav")))
 
 pygame.mixer.music.load(os.path.join("Sounds", "Hey.mp3"))
 
@@ -116,6 +136,10 @@ def new_Shield():
     shield = Player_Shield()
     all_sprites.add(shield)
     player_shield.add(shield)
+
+def play_onFire():
+    fire = Player_onFire()
+    all_sprites.add(fire)
     
 def new_roadblock(x):
     rdb = Roadblocks(x)
@@ -148,6 +172,17 @@ def draw_hp(surf, hp):
         
     elif hp == 1:
         surf.blit(HP_img, (WIDTH - 50, 10))
+
+def draw_RocketAmmo(surf, ammo):
+    if ammo == 3:
+        surf.blit(RPG_remain3, (10, 30))
+    
+    if ammo == 2:
+        surf.blit(RPG_remain2, (10, 30))
+        
+    if ammo == 1:
+        surf.blit(RPG_remain1, (10, 30))
+    
     
 
 
@@ -161,15 +196,19 @@ class Player(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.centerx = WIDTH/2
         self.rect.bottom = HEIGHT - 10
-        self.gas = 30
+        self.gas = 3000
         self.speedx = 8
         self.speedy = 8
     
-    def shoot(self):
-        rocket = Rocket(self.rect.centerx, self.rect.top)
-        all_sprites.add(rocket)
-        player_weapon.add(rocket)
-        player_rocket_sound.play()
+    def shoot(self, ammo):
+
+        if ammo > 0:
+            rocket = Rocket(self.rect.centerx, self.rect.top)
+            all_sprites.add(rocket)
+            player_weapon.add(rocket)
+            player_rocket_sound.play()
+        else:
+            player_NoAmmo_sound.play()
 
     
     def update(self):
@@ -217,7 +256,9 @@ class Player_Shield(pygame.sprite.Sprite):
         self.duration = 8000
 
         pygame.mixer.music.set_volume(0)
-        player_get_shield_sound.play()
+        if shield_BigBoy_sound.get_busy() == True:
+            shield_BigBoy_sound.stop()
+        shield_BigBoy_sound.play(player_get_shield_sound)
 
     
     def update(self):
@@ -225,9 +266,37 @@ class Player_Shield(pygame.sprite.Sprite):
         self.rect.centery = player.rect.centery
         now = pygame.time.get_ticks()
         if now - self.spawn_time >= self.duration:
-            pygame.mixer.music.set_volume(1)
+            if shield_BigBoy_sound.get_busy() == False:
+                pygame.mixer.music.set_volume(1)
             self.kill()
 
+class Player_onFire(pygame.sprite.Sprite):
+    def __init__(self):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = player_onFire_ani[0]
+        self.rect = self.image.get_rect()
+        self.rect.centerx = player.rect.centerx
+        self.rect.centery = player.rect.centery - 50
+        self.frame = 0
+        self.last_update = pygame.time.get_ticks()
+        self.frame_rate = 50
+        
+    
+    def update(self):
+        now = pygame.time.get_ticks()
+        if now - self.last_update > self.frame_rate:
+            self.last_update = now
+            self.frame += 1
+            if self.frame == len(player_onFire_ani):
+                self.frame = 0
+        self.image = player_onFire_ani[self.frame]
+        self.rect.centerx = player.rect.centerx
+        self.rect.centery = player.rect.centery - 50
+
+        
+        if(hp > 1):
+            self.kill()
+            
 
 
 class Vehicle(pygame.sprite.Sprite):
@@ -342,7 +411,9 @@ running = True
 score = 0
 score_increament = 0
 
+rocket_ammo = 0
 hp = 3
+is_onFire = 0
 
 spawnVicTimer1 = 3000
 spawnVicTimer2 = 4500
@@ -433,13 +504,15 @@ while running:
     
     for hits in player_hit_RandomBox:
         if hits.type == "RPG":
+            rocket_ammo = 3
             player_get_RPG_sound.play()
         
         if hits.type == "Shield":
             new_Shield()
             
         if hits.type == "Health":
-            hp += 1
+            if hp < 3:
+                hp += 1
             hp_gain_sound.play()
             
     #Player collide with roadblocks
@@ -452,6 +525,14 @@ while running:
         hp -= 1
 
     #hp check
+    if(hp < 2 and is_onFire == 0):
+        is_onFire = 1
+        random.choice(onFire_scream_sound).play()
+        play_onFire()
+
+    if(hp > 1):
+        is_onFire = 0
+
     if(hp <= 0):
         running = False
 
@@ -479,7 +560,8 @@ while running:
             running = False
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_LCTRL:
-                player.shoot()
+                player.shoot(rocket_ammo)
+                rocket_ammo -= 1
             
     
     #game update
@@ -493,6 +575,7 @@ while running:
     draw_gas(screen, player.gas, 10, 10)
     draw_text(screen, str(int(score)), 18, WIDTH/2, 10)
     draw_hp(screen, hp)
+    draw_RocketAmmo(screen, rocket_ammo)
     pygame.display.update()
 
 
