@@ -24,4 +24,6 @@ How to play:
 1. Use arrow keys to control Player's vehicle.
 2. Press Ctrl to fire rockets.
 
+//5/10 01:54 upload the new version of background by pochun 
+
 
