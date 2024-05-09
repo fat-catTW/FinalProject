@@ -12,19 +12,16 @@ WHITE = (255, 255, 255)
 GREEN = (0, 255, 0)
 
 #Random vehicle position
-RandomVicXPos1 = [80, 140, 200, 260, 320, 380]
-RandomVicXPos2 = [[80, 140],[80, 200], [80, 260], [80, 320], [80, 380], [140, 200], [140, 260], [140, 320], [140, 380], [200, 260], [200, 320], [200, 380], [260, 320], [260, 380],
-                   [320, 380]]
-RandomVicXPos3 = [[80, 140, 200], [80, 140, 260], [80, 140, 320], [80, 140, 380],
-                  [80, 200, 260], [80, 200, 320], [80, 200, 380],
-                  [80, 260, 320], [80, 260, 380],
-                  [80, 320, 380],
-                  [140, 200, 260], [140, 200, 320], [140, 200, 380], 
-                  [140, 260, 320], [140, 260, 380],
-                  [140, 320, 380],
-                  [200, 260, 320], [200, 260, 380],
-                  [200, 320, 380],
-                  [260, 320, 380]]
+RandomVicXPos1 = [100, 160, 223, 284, 343]
+RandomVicXPos2 = [[100, 160],[100, 223], [100, 284], [100, 343], [160, 223], [160, 284], [160, 343], [223, 284], [223, 343], [284, 343]]
+RandomVicXPos3 = [[100, 160, 223], [100, 160, 284], [100, 160, 343],
+                  [100, 223, 284], [100, 223, 343],
+                  [100, 284, 343], 
+                  [160, 223, 284], [160, 223, 343], 
+                  [160, 284, 343],
+                  [223, 284, 343]]
+
+RandomBoxXPos1 = [105, 165, 228, 289, 348]
 
 
 #game init
@@ -77,11 +74,23 @@ for i in range(9):
 
 roadblock_img = []
 for i in range(4):
-    roadblock_img.append(pygame.image.load(os.path.join("img", f"roadblock{i}.png")).convert())
+    road_block = pygame.image.load(os.path.join("img", f"roadblock{i}.png")).convert()
+    road_block.set_colorkey(BLACK)
+    roadblock_img.append(road_block)
 
 HP_img = pygame.image.load(os.path.join("img", "hp.png")).convert()
 HP_img = pygame.transform.scale(HP_img, (20, 20))
 HP_img.set_colorkey((192, 192, 192))
+
+coin_img = pygame.image.load(os.path.join("img", "GoldCoin.jpg")).convert()
+coin_img.set_colorkey(BLACK)
+
+
+background_imgs = []
+for i in range(3):
+    background_imgs.append(pygame.image.load(os.path.join("img", f"background{i}.png")).convert())
+
+background_img = random.choice(background_imgs)
 
 #load sound
 turning_sound = pygame.mixer.Sound(os.path.join("Sounds", "CarTurn.mp3"))
@@ -111,6 +120,9 @@ pygame.mixer.music.load(os.path.join("Sounds", "Hey.mp3"))
 
 hp_gain_sound = pygame.mixer.Sound(os.path.join("Sounds", "hpGain.mp3"))
 
+get_coin_sound = pygame.mixer.Sound(os.path.join("Sounds", "GetCoin.mp3"))
+get_coin_sound.set_volume(0.1)
+
 #functions
 font_name = pygame.font.match_font("arial")#setting 
 def draw_text(surf, text, size, x, y):
@@ -131,6 +143,11 @@ def new_RandomBox(x):
     RB = RandomBox(x)
     all_sprites.add(RB)
     RandomBox_sprites.add(RB)
+
+def new_Coin(x):
+    C = GoldCoin(x)
+    all_sprites.add(C)
+    coin_sprites.add(C)
 
 def new_Shield():
     shield = Player_Shield()
@@ -332,7 +349,20 @@ class RandomBox(pygame.sprite.Sprite):
         if self.rect.top > HEIGHT + 100:
             self.kill()
 
-
+class GoldCoin(pygame.sprite.Sprite):
+    def __init__(self, x):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.transform.scale(coin_img, (30,30))
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.bottom = -180
+        self.speedy = 4
+    
+    def update(self):
+        self.rect.y += self.speedy +accelerate
+        
+        if self.rect.top > HEIGHT + 100:
+            self.kill()
 
 class Rocket(pygame.sprite.Sprite):
     def __init__(self, x, y):
@@ -397,6 +427,7 @@ player_weapon = pygame.sprite.Group()
 player_shield = pygame.sprite.Group()
 RandomBox_sprites = pygame.sprite.Group()
 road_blocks = pygame.sprite.Group()
+coin_sprites = pygame.sprite.Group()
 
 player = Player()
 all_sprites.add(player)
@@ -422,6 +453,9 @@ last_now2 = pygame.time.get_ticks()
 
 spawnRandBoxTimer = 2000
 RandomBox_last_spawn = pygame.time.get_ticks()
+
+spawnCoinTimer = 1000
+Coin_last_spawn = pygame.time.get_ticks()
 
 genRoadblockTimer = 1500
 last_Roadblocks = pygame.time.get_ticks()
@@ -464,7 +498,7 @@ while running:
 
     #spawn RandomBox
     if now - RandomBox_last_spawn >= spawnRandBoxTimer:
-        x = random.choice(RandomVicXPos1)
+        x = random.choice(RandomBoxXPos1)
         new_RandomBox(x)
         RandomBox_last_spawn = now
         
@@ -483,6 +517,11 @@ while running:
         else:   #not generate roadblock
             last_Roadblocks = now
             
+    #spawn GoldCoin
+    if now - Coin_last_spawn >= spawnCoinTimer:
+        x = random.choice(RandomBoxXPos1)
+        new_Coin(x)
+        Coin_last_spawn = now
             
     #gas consumption
     player.gas -= 0.015
@@ -514,7 +553,13 @@ while running:
             if hp < 3:
                 hp += 1
             hp_gain_sound.play()
-            
+    
+    #Player get a coin
+    player_get_coin = pygame.sprite.spritecollide(player, coin_sprites, True)
+    for get in player_get_coin:
+        get_coin_sound.play()
+        score += 100
+
     #Player collide with roadblocks
     roadblock_crash = pygame.sprite.spritecollide(player, road_blocks, True)
     
@@ -571,6 +616,7 @@ while running:
     
     #display
     screen.fill(WHITE)
+    screen.blit(background_img, (0, 0))
     all_sprites.draw(screen)
     draw_gas(screen, player.gas, 10, 10)
     draw_text(screen, str(int(score)), 18, WIDTH/2, 10)
