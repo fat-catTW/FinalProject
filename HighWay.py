@@ -30,7 +30,7 @@ pygame.mixer.init()
 pygame.mixer.set_num_channels(10)
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 clock = pygame.time.Clock()
-pygame.display.set_caption("HighWay69")
+pygame.display.set_caption("BR-116")
 accelerate = 0.0
 
 
@@ -85,6 +85,11 @@ HP_img.set_colorkey((192, 192, 192))
 coin_img = pygame.image.load(os.path.join("img", "GoldCoin.jpg")).convert()
 coin_img.set_colorkey(BLACK)
 
+opp_img = []
+for i in range(5):
+    opposite_rider = pygame.image.load(os.path.join("img", f"oppRider{i}.png")).convert()
+    opposite_rider.set_colorkey(GREEN)
+    opp_img.append(opposite_rider)
 
 background_imgs = []
 for i in range(3):
@@ -138,6 +143,8 @@ def new_vics(x):
     vic = Vehicle(x)
     all_sprites.add(vic)
     other_vics.add(vic)
+    normal_obstacles.add(vic)
+    all_obstacles.add(vic)
 
 def new_RandomBox(x):
     RB = RandomBox(x)
@@ -161,7 +168,16 @@ def play_onFire():
 def new_roadblock(x):
     rdb = Roadblocks(x)
     all_sprites.add(rdb)
-    other_vics.add(rdb)
+    road_blocks.add(rdb)
+    normal_obstacles.add(rdb)
+    all_obstacles.add(rdb)
+    
+def new_oppsiteRider():
+    opp = OppositeRider()
+    all_sprites.add(opp)
+    other_vics.add(opp)
+    opposite_riders.add(opp)
+    all_obstacles.add(opp)
     
 def draw_gas(surf, gas, x, y):
     if gas < 0:
@@ -199,6 +215,8 @@ def draw_RocketAmmo(surf, ammo):
         
     if ammo == 1:
         surf.blit(RPG_remain1, (10, 30))
+        
+
     
     
 
@@ -419,10 +437,44 @@ class Roadblocks(pygame.sprite.Sprite):
         
         if self.rect.top > HEIGHT + 100:
             self.kill()
+            
+            
+class OppositeRider(pygame.sprite.Sprite): 
+    def __init__(self):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.transform.scale(random.choice(opp_img), (50, 80))
+        self.image.set_colorkey(GREEN)
+        self.rect = self.image.get_rect()
+        self.rect.x = random.randint(0, WIDTH)
+        self.rect.bottom = 0
+        self.speedy = 3
+        self.p1 = random.randint(0, 2)
+        self.p2 = random.randint(0, 2)
+    
+    def update(self):
+        self.rect.y += self.speedy + accelerate
+        x = random.random()
+        if x < 0.1*self.p1 :
+            self.rect.x += 10
+        elif x < 0.2*self.p2:
+            self.rect.x -= 10
+        else:
+            self.rect.x += 0
+        
+        if self.rect.top > HEIGHT + 80:
+            self.kill()
+            
+        if self.rect.x > WIDTH - 45:
+            self.rect.x = WIDTH - 45
+        elif self.rect.x < 45:
+            self.rect.x = 45
     
 
 all_sprites = pygame.sprite.Group()
+normal_obstacles = pygame.sprite.Group()
+all_obstacles = pygame.sprite.Group()
 other_vics = pygame.sprite.Group()
+opposite_riders = pygame.sprite.Group()
 player_weapon = pygame.sprite.Group()
 player_shield = pygame.sprite.Group()
 RandomBox_sprites = pygame.sprite.Group()
@@ -460,6 +512,9 @@ Coin_last_spawn = pygame.time.get_ticks()
 genRoadblockTimer = 1500
 last_Roadblocks = pygame.time.get_ticks()
 
+genOppRiderTimer = 10000
+last_oppositeRider = pygame.time.get_ticks()
+
 while running:
     
     clock.tick(FPS)
@@ -473,7 +528,6 @@ while running:
         score_increament = 0
     
     #spawn vic
-
     if now - last_now1 >= spawnVicTimer1: #spawn one vehicle
         x = random.choice(RandomVicXPos1)
         new_vics(x)
@@ -517,6 +571,11 @@ while running:
         else:   #not generate roadblock
             last_Roadblocks = now
             
+    #generate opposite rider
+    if accelerate > 0 and now - last_oppositeRider >= genOppRiderTimer/accelerate:
+        new_oppsiteRider()
+        last_oppositeRider = now        
+            
     #spawn GoldCoin
     if now - Coin_last_spawn >= spawnCoinTimer:
         x = random.choice(RandomBoxXPos1)
@@ -529,8 +588,8 @@ while running:
         running = False
         
     
-    #Player collide with vehicle
-    player_crash = pygame.sprite.spritecollide(player, other_vics, True)
+    #Player collide with vehicles, roadblocks, and opposite riders
+    player_crash = pygame.sprite.spritecollide(player, all_obstacles, True)
     
     for crash in player_crash:
         random.choice(expl_sounds).play()
@@ -560,15 +619,6 @@ while running:
         get_coin_sound.play()
         score += 100
 
-    #Player collide with roadblocks
-    roadblock_crash = pygame.sprite.spritecollide(player, road_blocks, True)
-    
-    for crash in roadblock_crash:
-        random.choice(expl_sounds).play()
-        expl = Explosion(crash.rect.center)
-        all_sprites.add(expl)
-        hp -= 1
-
     #hp check
     if(hp < 2 and is_onFire == 0):
         is_onFire = 1
@@ -597,7 +647,13 @@ while running:
         expl = Explosion(boom.rect.center)
         all_sprites.add(expl)
     
+    #Opposite rider collide with other vehicles and roadblocks
+    opp_crash = pygame.sprite.groupcollide(opposite_riders, normal_obstacles, True, True)
 
+    for crash in opp_crash:
+        random.choice(expl_sounds).play()
+        expl = Explosion(crash.rect.center)
+        all_sprites.add(expl)
 
     #input
     for event in pygame.event.get():
