@@ -10,8 +10,11 @@ Player:
 Obstacle:
 1. Civilian vehicles are able to spawn randomly(Can spawn 1, 2 or 3 vehicle at a time).
 2. Civilain vehicles can be destroyed when collisoin or shot by a rocket.
-3. Roadblocks are generated randomly on the left side or the right side one by one, which can make sure that the road wouldn't be full and the player 100% have at least 1 path to go through.
-4. All obstacles will accelerate after a period of time, including cililian vehicles and roadblocks.
+3. Roadblocks are generated randomly on the left side or the right side one by one, which can make sure that the road wouldn't be full and the player 100% havs at least 1 path to go through.
+4. Opposite riders are generated every 10 seconds, and it's x coodinate is random.
+5. When opposite riders collide with other civilian vehicles or roadblocks, they will destroy themselves and the collided obstacle.
+6. All obstacles will accelerate after a period of time, including cililian vehicles, roadblocks and opposite riders.
+7. Player will lose a hp if it collide with any obstacle.
 
 Random box:
 Player will obtain a random effect from following 3 statements:
