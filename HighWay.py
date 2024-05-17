@@ -2,7 +2,7 @@ import pygame
 import os
 import random
 import time
-
+import sys
 
 WIDTH = 500
 HEIGHT = 700
@@ -85,6 +85,9 @@ HP_img.set_colorkey((192, 192, 192))
 coin_img = pygame.image.load(os.path.join("img", "GoldCoin.jpg")).convert()
 coin_img.set_colorkey(BLACK)
 
+danger_sign_img = pygame.transform.scale(pygame.image.load(os.path.join("img", "Danger.png")).convert(),(50,50))
+danger_sign_img.set_colorkey(WHITE)
+
 opp_img = []
 for i in range(5):
     opposite_rider = pygame.image.load(os.path.join("img", f"oppRider{i}.png")).convert()
@@ -127,6 +130,8 @@ hp_gain_sound = pygame.mixer.Sound(os.path.join("Sounds", "hpGain.mp3"))
 
 get_coin_sound = pygame.mixer.Sound(os.path.join("Sounds", "GetCoin.mp3"))
 get_coin_sound.set_volume(0.1)
+
+Danger_sound = pygame.mixer.Sound(os.path.join("Sounds", "Danger.mp3"))
 
 #functions
 font_name = pygame.font.match_font("arial")#setting 
@@ -205,6 +210,9 @@ def draw_hp(surf, hp):
         
     elif hp == 1:
         surf.blit(HP_img, (WIDTH - 50, 10))
+
+def draw_DangerSign(surf):
+    surf.blit(danger_sign_img, (225, 300))
 
 def draw_RocketAmmo(surf, ammo):
     if ammo == 3:
@@ -450,6 +458,8 @@ class OppositeRider(pygame.sprite.Sprite):
         self.speedy = 3
         self.p1 = random.randint(0, 2)
         self.p2 = random.randint(0, 2)
+        
+
     
     def update(self):
         self.rect.y += self.speedy + accelerate
@@ -491,6 +501,7 @@ all_sprites.add(player)
 pygame.mixer.music.play()
 
 running = True
+running_start_time = pygame.time.get_ticks()
 score = 0
 score_increament = 0
 
@@ -514,6 +525,10 @@ last_Roadblocks = pygame.time.get_ticks()
 
 genOppRiderTimer = 10000
 last_oppositeRider = pygame.time.get_ticks()
+
+dangerSignTimer = 1000
+start_dangerSign = pygame.time.get_ticks()
+danger = False
 
 while running:
     
@@ -575,6 +590,9 @@ while running:
     if accelerate > 0 and now - last_oppositeRider >= genOppRiderTimer/accelerate:
         new_oppsiteRider()
         last_oppositeRider = now        
+        danger = True
+        Danger_sound.play()
+        start_dangerSign = pygame.time.get_ticks()
             
     #spawn GoldCoin
     if now - Coin_last_spawn >= spawnCoinTimer:
@@ -638,10 +656,22 @@ while running:
         random.choice(expl_sounds).play()
         expl = Explosion(boom.rect.center)
         all_sprites.add(expl)
+
+    weapon_destroy = pygame.sprite.groupcollide(road_blocks, player_weapon, True, True)
+    
+    for boom in weapon_destroy:
+        random.choice(expl_sounds).play()
+        expl = Explosion(boom.rect.center)
+        all_sprites.add(expl)
     
     #Shield destroy vehicle
     shield_destroy = pygame.sprite.groupcollide(other_vics, player_shield, True, False)
-    
+    for boom in shield_destroy:
+        random.choice(expl_sounds).play()
+        expl = Explosion(boom.rect.center)
+        all_sprites.add(expl)
+        
+    shield_destroy = pygame.sprite.groupcollide(road_blocks, player_shield, True, False)
     for boom in shield_destroy:
         random.choice(expl_sounds).play()
         expl = Explosion(boom.rect.center)
@@ -678,6 +708,12 @@ while running:
     draw_text(screen, str(int(score)), 18, WIDTH/2, 10)
     draw_hp(screen, hp)
     draw_RocketAmmo(screen, rocket_ammo)
+    
+        
+    
+    if now - start_dangerSign < dangerSignTimer and now - running_start_time > 5000:
+        draw_DangerSign(screen)
+
     pygame.display.update()
 
 
