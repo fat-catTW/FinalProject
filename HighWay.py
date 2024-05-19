@@ -32,6 +32,7 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT))
 clock = pygame.time.Clock()
 pygame.display.set_caption("BR-116")
 accelerate = 0.0
+last_fuel_spawn = pygame.time.get_ticks()
 
 
 #load image
@@ -224,7 +225,11 @@ def draw_RocketAmmo(surf, ammo):
     if ammo == 1:
         surf.blit(RPG_remain1, (10, 30))
         
-
+def new_fuel_tank():
+    x = random.choice([105, 165, 228, 289, 348])
+    ft = FuelTank(x)
+    all_sprites.add(ft)
+    fuel_tank_sprites.add(ft)
     
     
 
@@ -479,6 +484,20 @@ class OppositeRider(pygame.sprite.Sprite):
         elif self.rect.x < 45:
             self.rect.x = 45
     
+class FuelTank(pygame.sprite.Sprite):
+    def __init__(self, x):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.transform.scale(pygame.image.load(os.path.join("img", "fuelbox.png")).convert(), (40, 40))
+        self.image.set_colorkey(BLACK)
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.bottom = -40
+        self.speedy = 3
+
+    def update(self):
+        self.rect.y += self.speedy
+        if self.rect.top > HEIGHT:
+            self.kill()
 
 all_sprites = pygame.sprite.Group()
 normal_obstacles = pygame.sprite.Group()
@@ -490,6 +509,7 @@ player_shield = pygame.sprite.Group()
 RandomBox_sprites = pygame.sprite.Group()
 road_blocks = pygame.sprite.Group()
 coin_sprites = pygame.sprite.Group()
+fuel_tank_sprites = pygame.sprite.Group()
 
 player = Player()
 all_sprites.add(player)
@@ -585,6 +605,17 @@ while running:
             
         else:   #not generate roadblock
             last_Roadblocks = now
+
+    if now - last_fuel_spawn > 15000:  #A tank is generated every 15 seconds, the time can be adjusted as needed
+        new_fuel_tank()
+        last_fuel_spawn = now
+
+    #Detect player collisions with fuel tanks
+    player_hit_fuel = pygame.sprite.spritecollide(player, fuel_tank_sprites, True)
+    for fuel in player_hit_fuel:
+        player.gas = 3000  #Assume 3000 is the maximum value of player fuel
+
+
             
     #generate opposite rider
     if accelerate > 0 and now - last_oppositeRider >= genOppRiderTimer/accelerate:
@@ -697,7 +728,8 @@ while running:
     
     #game update
     all_sprites.update()
-    
+    fuel_tank_sprites.update()
+    fuel_tank_sprites.draw(screen)
     
     
     #display
