@@ -97,9 +97,7 @@ for i in range(5):
 
 background_imgs = []
 for i in range(3):
-    background_imgs.append(pygame.image.load(os.path.join("img", f"background{i}.png")).convert())
-
-background_img = random.choice(background_imgs)
+    background_imgs.append(pygame.image.load(os.path.join("img", f"backgroundv3-{i}.png")).convert())
 
 #load sound
 turning_sound = pygame.mixer.Sound(os.path.join("Sounds", "CarTurn.mp3"))
@@ -147,40 +145,40 @@ def draw_text(surf, text, size, x, y):
     
 def new_vics(x):
     vic = Vehicle(x)
-    all_sprites.add(vic)
+    all_sprites.add(vic, layer = 1)
     other_vics.add(vic)
     normal_obstacles.add(vic)
     all_obstacles.add(vic)
 
 def new_RandomBox(x):
     RB = RandomBox(x)
-    all_sprites.add(RB)
+    all_sprites.add(RB, layer = 2)
     RandomBox_sprites.add(RB)
 
 def new_Coin(x):
     C = GoldCoin(x)
-    all_sprites.add(C)
+    all_sprites.add(C, layer = 2)
     coin_sprites.add(C)
 
 def new_Shield():
     shield = Player_Shield()
-    all_sprites.add(shield)
+    all_sprites.add(shield, layer = 2)
     player_shield.add(shield)
 
 def play_onFire():
     fire = Player_onFire()
-    all_sprites.add(fire)
+    all_sprites.add(fire, layer = 2)
     
 def new_roadblock(x):
     rdb = Roadblocks(x)
-    all_sprites.add(rdb)
+    all_sprites.add(rdb, layer = 1)
     road_blocks.add(rdb)
     normal_obstacles.add(rdb)
     all_obstacles.add(rdb)
     
 def new_oppsiteRider():
     opp = OppositeRider()
-    all_sprites.add(opp)
+    all_sprites.add(opp, layer = 1)
     other_vics.add(opp)
     opposite_riders.add(opp)
     all_obstacles.add(opp)
@@ -228,9 +226,12 @@ def draw_RocketAmmo(surf, ammo):
 def new_fuel_tank():
     x = random.choice([105, 165, 228, 289, 348])
     ft = FuelTank(x)
-    all_sprites.add(ft)
+    all_sprites.add(ft, layer = 2)
     fuel_tank_sprites.add(ft)
     
+def new_background(pos, img):
+    bg = Background(pos, img)
+    all_sprites.add(bg, layer = 0)
     
 
 
@@ -252,7 +253,7 @@ class Player(pygame.sprite.Sprite):
 
         if ammo > 0:
             rocket = Rocket(self.rect.centerx, self.rect.top)
-            all_sprites.add(rocket)
+            all_sprites.add(rocket, layer = 2)
             player_weapon.add(rocket)
             player_rocket_sound.play()
         else:
@@ -459,12 +460,10 @@ class OppositeRider(pygame.sprite.Sprite):
         self.image.set_colorkey(GREEN)
         self.rect = self.image.get_rect()
         self.rect.x = random.randint(0, WIDTH)
-        self.rect.bottom = 0
+        self.rect.bottom = -3
         self.speedy = 3
         self.p1 = random.randint(0, 2)
         self.p2 = random.randint(0, 2)
-        
-
     
     def update(self):
         self.rect.y += self.speedy + accelerate
@@ -479,10 +478,10 @@ class OppositeRider(pygame.sprite.Sprite):
         if self.rect.top > HEIGHT + 80:
             self.kill()
             
-        if self.rect.x > WIDTH - 45:
-            self.rect.x = WIDTH - 45
-        elif self.rect.x < 45:
-            self.rect.x = 45
+        if self.rect.x > WIDTH - 50:
+            self.rect.x = WIDTH - 50
+        elif self.rect.x < 50:
+            self.rect.x = 50
     
 class FuelTank(pygame.sprite.Sprite):
     def __init__(self, x):
@@ -498,8 +497,45 @@ class FuelTank(pygame.sprite.Sprite):
         self.rect.y += self.speedy
         if self.rect.top > HEIGHT:
             self.kill()
+            
+class Background(pygame.sprite.Sprite): 
+    def __init__(self, position, randImg):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.transform.scale(background_imgs[randImg], (WIDTH, HEIGHT*2))
+        self.rect = self.image.get_rect()
+        self.rect.x = 0
+        self.rect.top = position
+        self.speedy = 1
+    
+    def update(self):
+        self.rect.y += self.speedy + accelerate
+        
+        if self.rect.top > HEIGHT + HEIGHT:
+            self.kill()
+            
+class BackgroundManager:
+    def __init__(self, group, randFirstImg):
+        self.sprite_group = group
+        self.last_background = None
+        self.nowImg = randFirstImg
+        self.count = 0
 
-all_sprites = pygame.sprite.Group()
+    def generate_background(self):
+        new_background = Background(HEIGHT*(-2), self.nowImg)
+        self.sprite_group.add(new_background, layer = 0)
+        self.last_background = new_background
+
+    def update(self):
+        if self.last_background is None or self.last_background.rect.top > -10:
+            self.generate_background()
+            self.count += 1
+            
+        if self.count == 4:
+            self.count = 0
+            self.nowImg = random.randint(0, 2)
+
+
+all_sprites = pygame.sprite.LayeredUpdates()
 normal_obstacles = pygame.sprite.Group()
 all_obstacles = pygame.sprite.Group()
 other_vics = pygame.sprite.Group()
@@ -512,7 +548,7 @@ coin_sprites = pygame.sprite.Group()
 fuel_tank_sprites = pygame.sprite.Group()
 
 player = Player()
-all_sprites.add(player)
+all_sprites.add(player, layer = 2)
 
 
 
@@ -549,6 +585,10 @@ last_oppositeRider = pygame.time.get_ticks()
 dangerSignTimer = 1000
 start_dangerSign = pygame.time.get_ticks()
 danger = False
+
+firstImg = random.randint(0, 2)
+new_background(0, firstImg)
+background_manager = BackgroundManager(all_sprites, firstImg)
 
 while running:
     
@@ -630,6 +670,9 @@ while running:
         x = random.choice(RandomBoxXPos1)
         new_Coin(x)
         Coin_last_spawn = now
+        
+    #generate new background
+    background_manager.update()
             
     #gas consumption
     player.gas -= 0.015
@@ -643,7 +686,7 @@ while running:
     for crash in player_crash:
         random.choice(expl_sounds).play()
         expl = Explosion(crash.rect.center)
-        all_sprites.add(expl)
+        all_sprites.add(expl, layer = 2)
         hp -= 1
     
     #Player collide with randomBox
@@ -686,14 +729,14 @@ while running:
     for boom in weapon_destroy:
         random.choice(expl_sounds).play()
         expl = Explosion(boom.rect.center)
-        all_sprites.add(expl)
+        all_sprites.add(expl, layer = 2)
 
     weapon_destroy = pygame.sprite.groupcollide(road_blocks, player_weapon, True, True)
     
     for boom in weapon_destroy:
         random.choice(expl_sounds).play()
         expl = Explosion(boom.rect.center)
-        all_sprites.add(expl)
+        all_sprites.add(expl, layer = 2)
     
     #Shield destroy vehicle
     shield_destroy = pygame.sprite.groupcollide(other_vics, player_shield, True, False)
@@ -706,7 +749,7 @@ while running:
     for boom in shield_destroy:
         random.choice(expl_sounds).play()
         expl = Explosion(boom.rect.center)
-        all_sprites.add(expl)
+        all_sprites.add(expl, layer = 2)
     
     #Opposite rider collide with other vehicles and roadblocks
     opp_crash = pygame.sprite.groupcollide(opposite_riders, normal_obstacles, True, True)
@@ -714,7 +757,7 @@ while running:
     for crash in opp_crash:
         random.choice(expl_sounds).play()
         expl = Explosion(crash.rect.center)
-        all_sprites.add(expl)
+        all_sprites.add(expl, layer = 2)
 
     #input
     for event in pygame.event.get():
@@ -734,7 +777,6 @@ while running:
     
     #display
     screen.fill(WHITE)
-    screen.blit(background_img, (0, 0))
     all_sprites.draw(screen)
     draw_gas(screen, player.gas, 10, 10)
     draw_text(screen, str(int(score)), 18, WIDTH/2, 10)
