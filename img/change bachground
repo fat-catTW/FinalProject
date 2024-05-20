@@ -1,0 +1,53 @@
+import pygame
+import sys
+from pygame.locals import *
+
+pygame.init()
+
+# 設定視窗大小和顯示區域
+WINDOW_WIDTH = 400
+WINDOW_HEIGHT = 400
+DISPLAYSURF = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
+pygame.display.set_caption('Image Switching Game')
+
+# 設定顏色
+BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
+
+# 圖片列表
+images = ['background3-1.png', 'background3-2.png', 'background3-3.png'] 
+# 這裡假設你有三張圖
+current_image_index = 0
+
+# 載入圖片
+current_image = pygame.image.load(images[current_image_index])
+
+# 設定計時器
+FPS = 50
+fpsClock = pygame.time.Clock()
+
+# 遊戲主迴圈
+running = True
+while running:
+    for event in pygame.event.get():
+        if event.type == QUIT:
+            running = False
+
+    # 更新圖片索引
+    current_image_index = (current_image_index + 1) % len(images)
+    current_image = pygame.image.load(images[current_image_index])
+
+    # 清除螢幕
+    DISPLAYSURF.fill(WHITE)
+
+    # 繪製圖片
+    DISPLAYSURF.blit(current_image, (0, 0))
+
+    # 更新顯示
+    pygame.display.update()
+
+    # 控制FPS
+    fpsClock.tick(FPS)
+
+pygame.quit()
+sys.exit()
