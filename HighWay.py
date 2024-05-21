@@ -10,7 +10,7 @@ FPS = 100
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 GREEN = (0, 255, 0)
-
+ROADBLOCK_FILTER = (160, 32, 240)
 #Random vehicle position
 RandomVicXPos1 = [100, 160, 223, 284, 343]
 RandomVicXPos2 = [[100, 160],[100, 223], [100, 284], [100, 343], [160, 223], [160, 284], [160, 343], [223, 284], [223, 343], [284, 343]]
@@ -32,6 +32,7 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT))
 clock = pygame.time.Clock()
 pygame.display.set_caption("BR-116")
 accelerate = 0.0
+select_level = random.randint(0,2)
 last_fuel_spawn = pygame.time.get_ticks()
 
 
@@ -74,10 +75,12 @@ for i in range(9):
     expl_anim.append(pygame.transform.scale(expl_img, (90, 90)))
 
 roadblock_img = []
-for i in range(4):
-    road_block = pygame.image.load(os.path.join("img", f"roadblock{i}.png")).convert()
-    road_block.set_colorkey(BLACK)
+for i in range(9):
+    road_block = pygame.image.load(os.path.join("img", f"roadblockvv-{i}.png")).convert()
+    road_block.set_colorkey(ROADBLOCK_FILTER)
     roadblock_img.append(road_block)
+
+
 
 HP_img = pygame.image.load(os.path.join("img", "hp.png")).convert()
 HP_img = pygame.transform.scale(HP_img, (20, 20))
@@ -97,7 +100,7 @@ for i in range(5):
 
 background_imgs = []
 for i in range(3):
-    background_imgs.append(pygame.image.load(os.path.join("img", f"backgroundv3-{i}.png")).convert())
+    background_imgs.append(pygame.image.load(os.path.join("img", f"backgroundvv-{i}.png")).convert())
 
 #load sound
 turning_sound = pygame.mixer.Sound(os.path.join("Sounds", "CarTurn.mp3"))
@@ -111,8 +114,11 @@ player_NoAmmo_sound = pygame.mixer.Sound(os.path.join("Sounds", "AmmoEmpty.mp3")
 player_get_RPG_sound = pygame.mixer.Sound(os.path.join("Sounds", "RocketLauncher.mp3"))
 player_get_RPG_sound.set_volume(0.8)
 
-player_get_shield_sound = pygame.mixer.Sound(os.path.join("Sounds", "BigBoy.mp3"))
-player_get_shield_sound.set_volume(0.8)
+player_get_shield_sound = []
+for i in range(2):
+    temp = pygame.mixer.Sound(os.path.join("Sounds", f"BigBoy{i}.mp3"))
+    temp.set_volume(0.8)
+    player_get_shield_sound.append(temp)
 shield_BigBoy_sound = pygame.mixer.Channel(1)
 
 expl_sounds = []
@@ -123,7 +129,8 @@ onFire_scream_sound = []
 for i in range(7):
     onFire_scream_sound.append(pygame.mixer.Sound(os.path.join("Sounds", f"onFire{i}.wav")))
 
-pygame.mixer.music.load(os.path.join("Sounds", "Hey.mp3"))
+pygame.mixer.music.load(os.path.join("Sounds", "BGM0.mp3"))
+pygame.mixer.music.queue(os.path.join("Sounds", "BGM2.mp3"))
 
 hp_gain_sound = pygame.mixer.Sound(os.path.join("Sounds", "hpGain.mp3"))
 
@@ -131,6 +138,8 @@ get_coin_sound = pygame.mixer.Sound(os.path.join("Sounds", "GetCoin.mp3"))
 get_coin_sound.set_volume(0.1)
 
 Danger_sound = pygame.mixer.Sound(os.path.join("Sounds", "Danger.mp3"))
+
+get_gas_sound = pygame.mixer.Sound(os.path.join("Sounds", "getGas.mp3"))
 
 #functions
 font_name = pygame.font.match_font("arial")#setting 
@@ -232,6 +241,8 @@ def new_fuel_tank():
 def new_background(pos, img):
     bg = Background(pos, img)
     all_sprites.add(bg, layer = 0)
+
+
     
 
 
@@ -245,7 +256,7 @@ class Player(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.centerx = WIDTH/2
         self.rect.bottom = HEIGHT - 10
-        self.gas = 3000
+        self.gas = 30
         self.speedx = 8
         self.speedy = 8
     
@@ -307,7 +318,8 @@ class Player_Shield(pygame.sprite.Sprite):
         pygame.mixer.music.set_volume(0)
         if shield_BigBoy_sound.get_busy() == True:
             shield_BigBoy_sound.stop()
-        shield_BigBoy_sound.play(player_get_shield_sound)
+        choose = random.choice(player_get_shield_sound)
+        shield_BigBoy_sound.play(choose)
 
     
     def update(self):
@@ -369,7 +381,16 @@ class RandomBox(pygame.sprite.Sprite):
     def __init__(self, x):
         pygame.sprite.Sprite.__init__(self)
         self.image = pygame.transform.scale(RandomBox_img, (40,40))
-        self.type = random.choice(["RPG", "Shield", "Health"])
+        choose = random.random()
+        if choose <= 0.2:
+            self.type = "Shield"
+        elif choose >= 0.2 and choose <=0.5:
+            self.type = "Health" 
+        elif choose > 0.5 and choose <= 0.8:
+            self.type = "RPG"
+        else:
+            self.type = "Gas"
+        #self.type = random.choice(["RPG", "Shield", "Health"])
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.bottom = -180
@@ -439,12 +460,18 @@ class Explosion(pygame.sprite.Sprite):
 class Roadblocks(pygame.sprite.Sprite):
     def __init__(self, x):
         pygame.sprite.Sprite.__init__(self)
-        self.image = pygame.transform.scale(random.choice(roadblock_img), (50, 100))
-        self.image.set_colorkey(BLACK)
+        if select_level == 0:
+            self.image = pygame.transform.scale(roadblock_img[random.randint(0,2)], (50, 60))
+        if select_level == 1:
+            self.image = pygame.transform.scale(roadblock_img[random.randint(3,5)], (50, 60))
+        if select_level == 2:
+            self.image = pygame.transform.scale(roadblock_img[random.randint(6,8)], (50, 60))
+
+        #self.image.set_colorkey(WHITE)
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.bottom = 0
-        self.speedy = 3     #路障的初始速度(因為在道路上靜止，所以相對來說速度更快)
+        self.speedy = 4     #路障的初始速度(因為在道路上靜止，所以相對來說速度更快)
     
     def update(self):
         self.rect.y += self.speedy + accelerate
@@ -491,10 +518,10 @@ class FuelTank(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.bottom = -40
-        self.speedy = 3
+        self.speedy = 4
 
     def update(self):
-        self.rect.y += self.speedy
+        self.rect.y += self.speedy + accelerate
         if self.rect.top > HEIGHT:
             self.kill()
             
@@ -505,7 +532,7 @@ class Background(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = 0
         self.rect.top = position
-        self.speedy = 1
+        self.speedy = 4
     
     def update(self):
         self.rect.y += self.speedy + accelerate
@@ -526,6 +553,7 @@ class BackgroundManager:
         self.last_background = new_background
 
     def update(self):
+        global select_level
         if self.last_background is None or self.last_background.rect.top > -10:
             self.generate_background()
             self.count += 1
@@ -533,6 +561,7 @@ class BackgroundManager:
         if self.count == 4:
             self.count = 0
             self.nowImg = random.randint(0, 2)
+            select_level = self.nowImg
 
 
 all_sprites = pygame.sprite.LayeredUpdates()
@@ -586,9 +615,9 @@ dangerSignTimer = 1000
 start_dangerSign = pygame.time.get_ticks()
 danger = False
 
-firstImg = random.randint(0, 2)
-new_background(0, firstImg)
-background_manager = BackgroundManager(all_sprites, firstImg)
+
+new_background(0, select_level)
+background_manager = BackgroundManager(all_sprites, select_level)
 
 while running:
     
@@ -627,8 +656,9 @@ while running:
 
     #spawn RandomBox
     if now - RandomBox_last_spawn >= spawnRandBoxTimer:
-        x = random.choice(RandomBoxXPos1)
-        new_RandomBox(x)
+        if random.random() > 0.7:
+            x = random.choice(RandomBoxXPos1)
+            new_RandomBox(x)
         RandomBox_last_spawn = now
         
     #generate roadblocks
@@ -653,7 +683,8 @@ while running:
     #Detect player collisions with fuel tanks
     player_hit_fuel = pygame.sprite.spritecollide(player, fuel_tank_sprites, True)
     for fuel in player_hit_fuel:
-        player.gas = 3000  #Assume 3000 is the maximum value of player fuel
+        player.gas = 30  #Assume 30 is the maximum value of player fuel
+        get_gas_sound.play()
 
 
             
@@ -704,6 +735,9 @@ while running:
             if hp < 3:
                 hp += 1
             hp_gain_sound.play()
+        if hits.type == "Gas":
+            player.gas = 30  
+            get_gas_sound.play()
     
     #Player get a coin
     player_get_coin = pygame.sprite.spritecollide(player, coin_sprites, True)
@@ -771,8 +805,8 @@ while running:
     
     #game update
     all_sprites.update()
-    fuel_tank_sprites.update()
-    fuel_tank_sprites.draw(screen)
+    #fuel_tank_sprites.update()
+    #fuel_tank_sprites.draw(screen)
     
     
     #display
