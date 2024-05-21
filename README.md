@@ -13,14 +13,15 @@ Obstacle:
 3. Roadblocks are generated randomly on the left side or the right side one by one, which can make sure that the road wouldn't be full and the player 100% havs at least 1 path to go through.
 4. Opposite riders are generated every 10 seconds, and it's x coodinate is random.
 5. When opposite riders collide with other civilian vehicles or roadblocks, they will destroy themselves and the collided obstacle.
-6. All obstacles will accelerate after a period of time, including cililian vehicles, roadblocks and opposite riders.
+6. All obstacles will accelerate after a period of time, including civilian vehicles, roadblocks and opposite riders.
 7. Player will lose a hp if it collide with any obstacle.
 
 Random box:
 Player will obtain a random effect from following 3 statements:
-1. Invicible mode: player would not be hurt by any obstacles.
+1. Invicible mode: player would not be hurt by any obstacles for 8 seconds.
 2. Rocket: player obtain a rocket to destroy obstacles.
 3. HP regeneration: player regenerate a lost HP.
+4. Gas: Fill up player's Gas.
 
 
 How to play:
