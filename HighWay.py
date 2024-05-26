@@ -781,7 +781,7 @@ while (mainmenu != 0):
                 else:   #not generate roadblock
                     last_Roadblocks = now
         
-            if now - last_fuel_spawn > 15000:  #A tank is generated every 15 seconds, the time can be adjusted as needed
+            if now - last_fuel_spawn > 10000:  #A tank is generated every 15 seconds, the time can be adjusted as needed
                 new_fuel_tank()
                 last_fuel_spawn = now
         
