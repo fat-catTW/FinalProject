@@ -257,8 +257,9 @@ def get_font(size): # Returns Press-Start-2P in the desired size
 
 def main_menu(mainmenu):
     pygame.mixer.music.stop()
-    global accelerate
+    global accelerate, is_shield
     accelerate = 0
+    is_shield = False
     main_menu_sound.play()
 
     background_image = pygame.image.load(os.path.join("img", "BR-116Brazil.png")).convert()
@@ -316,7 +317,7 @@ class Player(pygame.sprite.Sprite):
         self.rect.bottom = HEIGHT - 10
         self.gas = 30
         self.speedx = 8
-        self.speedy = 8
+        self.speedy = 8 
     
     def shoot(self, ammo):
 
@@ -755,10 +756,8 @@ while (mainmenu != 0):
         hp = 3
         is_onFire = 0
         
-        spawnVicTimer1 = 3000
-        spawnVicTimer2 = 4500
-        last_now1 = pygame.time.get_ticks()
-        last_now2 = pygame.time.get_ticks()
+        spawnVicTimer = 1800
+        last_vic = pygame.time.get_ticks()
         
         spawnRandBoxTimer = 2000
         RandomBox_last_spawn = pygame.time.get_ticks()
@@ -806,25 +805,25 @@ while (mainmenu != 0):
                     score_increment = 0
                 
                 #spawn vic
-                if now - last_now1 >= spawnVicTimer1: #spawn one vehicle
-                    x = random.choice(RandomVicXPos1)
-                    last_now1 = now
-                    new_vics(x)
+                if now - last_vic >= spawnVicTimer:
             
-                if now - last_now2 >= spawnVicTimer2: #spawn mutiple vehicle
-            
-                    spawn = random.randint(2,3)
+                    spawn = random.randint(1,3)
             
                     match spawn:
+                        case 1:
+                            x = random.choice(RandomVicXPos1)
+                            last_vic = now
+                            new_vics(x)
+                        
                         case 2:
                             tempList = random.choice(RandomVicXPos2)
-                            last_now2 = now
+                            last_vic = now
                             for x in tempList:
                                 new_vics(x)
                         
                         case 3:
                             tempList = random.choice(RandomVicXPos3)
-                            last_now2 = now
+                            last_vic = now
                             for x in tempList:
                                 new_vics(x)
             
@@ -850,7 +849,7 @@ while (mainmenu != 0):
                     else:   #not generate roadblock
                         last_Roadblocks = now
             
-                if now - last_fuel_spawn > 15000:  #A tank is generated every 15 seconds, the time can be adjusted as needed
+                if now - last_fuel_spawn > 10000:  #A tank is generated every 10 seconds, the time can be adjusted as needed
                     new_fuel_tank()
                     last_fuel_spawn = now
             
@@ -889,7 +888,9 @@ while (mainmenu != 0):
                     expl = Explosion(crash.rect.center)
                     all_sprites.add(expl, layer = 2)
                     expl_sprites.add(expl)
-                    hp -= 1
+                    
+                    if is_shield == False:
+                        hp -= 1
                 
                 #Player collide with randomBox
                 player_hit_RandomBox = pygame.sprite.spritecollide(player, RandomBox_sprites, True)
@@ -901,6 +902,7 @@ while (mainmenu != 0):
                     
                     if hits.type == "Shield":
                         new_Shield()
+                        is_shield = True
                         
                     if hits.type == "Health":
                         if hp < 3:
@@ -957,6 +959,10 @@ while (mainmenu != 0):
                     expl = Explosion(boom.rect.center)
                     all_sprites.add(expl, layer = 2)
                     expl_sprites.add(expl)
+                    
+                #Shield statement check    
+                if len(player_shield) == 0:
+                    is_shield = False
                 
                 #Opposite rider collide with other vehicles and roadblocks
                 opp_crash = pygame.sprite.groupcollide(opposite_riders, normal_obstacles, True, True)
