@@ -103,7 +103,6 @@ for i in range(3):
     background_imgs.append(pygame.image.load(os.path.join("img", f"backgroundvv-{i}.png")).convert())
 
 #load sound
-running_sound = pygame.mixer.Sound(os.path.join("Sounds", "Hey.mp3"))
 turning_sound = pygame.mixer.Sound(os.path.join("Sounds", "CarTurn.mp3"))
 turning_sound.set_volume(0.1)
 player_turning = pygame.mixer.Channel(0)
@@ -129,6 +128,7 @@ for i in range(2):
 onFire_scream_sound = []
 for i in range(7):
     onFire_scream_sound.append(pygame.mixer.Sound(os.path.join("Sounds", f"onFire{i}.wav")))
+
 
 pygame.mixer.music.load(os.path.join("Sounds", "BGM0.mp3"))
 pygame.mixer.music.queue(os.path.join("Sounds", "BGM2.mp3"))
@@ -253,6 +253,9 @@ def get_font(size): # Returns Press-Start-2P in the desired size
     return pygame.font.Font("img/font.ttf", size)
 
 def main_menu(mainmenu):
+    pygame.mixer.music.stop()
+    global accelerate
+    accelerate = 0
     main_menu_sound.play()
 
     background_image = pygame.image.load(os.path.join("img", "BR-116Brazil.png")).convert()
@@ -678,8 +681,8 @@ while (mainmenu != 0):
     running, mainmenu = main_menu(mainmenu)
     #todo: 修改每一局承繼相同血量的問題
     if running:
-        pygame.mixer.music.set_volume(0)
-        running_sound.play()
+        pygame.mixer.stop()
+        
         running_start_time = pygame.time.get_ticks()
         
         all_sprites.add(player, layer = 2) 
@@ -724,7 +727,10 @@ while (mainmenu != 0):
         player.gas = 30
         player.speedx = 8
         player.speedy = 8
-            
+        
+        
+        pygame.mixer.music.play()
+
         while running:
             clock.tick(FPS)
             now = pygame.time.get_ticks()
@@ -781,7 +787,7 @@ while (mainmenu != 0):
                 else:   #not generate roadblock
                     last_Roadblocks = now
         
-            if now - last_fuel_spawn > 10000:  #A tank is generated every 15 seconds, the time can be adjusted as needed
+            if now - last_fuel_spawn > 15000:  #A tank is generated every 15 seconds, the time can be adjusted as needed
                 new_fuel_tank()
                 last_fuel_spawn = now
         
