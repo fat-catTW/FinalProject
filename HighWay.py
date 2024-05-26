@@ -4,6 +4,8 @@ import random
 import time
 import sys
 
+import pygame.locals
+
 WIDTH = 500
 HEIGHT = 700
 FPS = 100
@@ -248,6 +250,7 @@ def new_fuel_tank():
 def new_background(pos, img):
     bg = Background(pos, img)
     all_sprites.add(bg, layer = 0)
+    
 font_name = pygame.font.match_font("arial")#setting 
 def get_font(size): # Returns Press-Start-2P in the desired size
     return pygame.font.Font("img/font.ttf", size)
@@ -324,6 +327,9 @@ class Player(pygame.sprite.Sprite):
             player_rocket_sound.play()
         else:
             player_NoAmmo_sound.play()
+            
+    def clean(self):
+        self.kill()
 
     
     def update(self):
@@ -359,6 +365,8 @@ class Player(pygame.sprite.Sprite):
         if self.rect.top < 0:
             self.rect.top = 0
 
+
+
 class Player_Shield(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
@@ -375,7 +383,9 @@ class Player_Shield(pygame.sprite.Sprite):
             shield_BigBoy_sound.stop()
         choose = random.choice(player_get_shield_sound)
         shield_BigBoy_sound.play(choose)
-
+        
+    def clean(self):
+        self.kill()
     
     def update(self):
         self.rect.centerx = player.rect.centerx
@@ -385,6 +395,8 @@ class Player_Shield(pygame.sprite.Sprite):
             if shield_BigBoy_sound.get_busy() == False:
                 pygame.mixer.music.set_volume(1)
             self.kill()
+
+
 
 class Player_onFire(pygame.sprite.Sprite):
     def __init__(self):
@@ -397,6 +409,8 @@ class Player_onFire(pygame.sprite.Sprite):
         self.last_update = pygame.time.get_ticks()
         self.frame_rate = 50
         
+    def clean(self):
+        self.kill()
     
     def update(self):
         now = pygame.time.get_ticks()
@@ -425,11 +439,15 @@ class Vehicle(pygame.sprite.Sprite):
         self.rect.bottom = random.randrange(-180, -150)
         self.speedy = 2
     
+    def clean(self):
+        self.kill()
+    
     def update(self):
         self.rect.y += self.speedy + accelerate
         
         if self.rect.top > HEIGHT + 100:
             self.kill()
+     
             
 
 class RandomBox(pygame.sprite.Sprite):
@@ -450,12 +468,17 @@ class RandomBox(pygame.sprite.Sprite):
         self.rect.x = x
         self.rect.bottom = -180
         self.speedy = 4
+        
+    def clean(self):
+        self.kill()
     
     def update(self):
         self.rect.y += self.speedy +accelerate
         
         if self.rect.top > HEIGHT + 100:
             self.kill()
+
+
 
 class GoldCoin(pygame.sprite.Sprite):
     def __init__(self, x):
@@ -465,12 +488,17 @@ class GoldCoin(pygame.sprite.Sprite):
         self.rect.x = x
         self.rect.bottom = -180
         self.speedy = 4
+        
+    def clean(self):
+        self.kill()
     
     def update(self):
         self.rect.y += self.speedy +accelerate
         
         if self.rect.top > HEIGHT + 100:
             self.kill()
+
+
 
 class Rocket(pygame.sprite.Sprite):
     def __init__(self, x, y):
@@ -481,11 +509,16 @@ class Rocket(pygame.sprite.Sprite):
         self.rect.centerx = x
         self.rect.bottom = y
         self.speedy = -15
+        
+    def clean(self):
+        self.kill()
     
     def update(self):
         self.rect.y += self.speedy
         if self.rect.bottom < 0:
             self.kill()
+
+
 
 class Explosion(pygame.sprite.Sprite):
     def __init__(self, center):
@@ -497,7 +530,9 @@ class Explosion(pygame.sprite.Sprite):
         self.last_update = pygame.time.get_ticks()
         self.frame_rate = 50
         
-    
+    def clean(self):
+        self.kill()
+        
     def update(self):
         now = pygame.time.get_ticks()
         if now - self.last_update > self.frame_rate:
@@ -510,6 +545,7 @@ class Explosion(pygame.sprite.Sprite):
                 center = self.rect.center
                 self.rect = self.image.get_rect()
                 self.rect.center = center
+        
         
         
 class Roadblocks(pygame.sprite.Sprite):
@@ -527,12 +563,16 @@ class Roadblocks(pygame.sprite.Sprite):
         self.rect.x = x
         self.rect.bottom = 0
         self.speedy = 4     #路障的初始速度(因為在道路上靜止，所以相對來說速度更快)
+        
+    def clean(self):
+        self.kill()
     
     def update(self):
         self.rect.y += self.speedy + accelerate
         
         if self.rect.top > HEIGHT + 100:
             self.kill()
+            
             
             
 class OppositeRider(pygame.sprite.Sprite): 
@@ -544,15 +584,22 @@ class OppositeRider(pygame.sprite.Sprite):
         self.rect.x = random.randint(0, WIDTH)
         self.rect.bottom = -3
         self.speedy = 3
-        self.p1 = random.randint(0, 2)
-        self.p2 = random.randint(0, 2)
+        self.p1 = 0
+        self.p2 = 0
+        
+        while self.p1 == 0 and self.p2 == 0:
+            self.p1 = random.randint(0, 2)
+            self.p2 = random.randint(0, 2)
+        
+    def clean(self):
+        self.kill()
     
     def update(self):
         self.rect.y += self.speedy + accelerate
         x = random.random()
-        if x < 0.1*self.p1 :
+        if x < 0.15*self.p1 :
             self.rect.x += 10
-        elif x < 0.2*self.p2:
+        elif x < 0.3*self.p2:
             self.rect.x -= 10
         else:
             self.rect.x += 0
@@ -565,6 +612,8 @@ class OppositeRider(pygame.sprite.Sprite):
         elif self.rect.x < 50:
             self.rect.x = 50
     
+    
+    
 class FuelTank(pygame.sprite.Sprite):
     def __init__(self, x):
         pygame.sprite.Sprite.__init__(self)
@@ -574,11 +623,16 @@ class FuelTank(pygame.sprite.Sprite):
         self.rect.x = x
         self.rect.bottom = -40
         self.speedy = 4
+        
+    def clean(self):
+        self.kill()
 
     def update(self):
         self.rect.y += self.speedy + accelerate
         if self.rect.top > HEIGHT:
             self.kill()
+            
+            
             
 class Background(pygame.sprite.Sprite): 
     def __init__(self, position, randImg):
@@ -588,12 +642,17 @@ class Background(pygame.sprite.Sprite):
         self.rect.x = 0
         self.rect.top = position
         self.speedy = 4
+        
+    def clean(self):
+        self.kill()
     
     def update(self):
         self.rect.y += self.speedy + accelerate
         
         if self.rect.top > HEIGHT + HEIGHT:
             self.kill()
+            
+            
             
 class BackgroundManager:
     def __init__(self, group, randFirstImg):
@@ -617,6 +676,8 @@ class BackgroundManager:
             self.count = 0
             self.nowImg = random.randint(0, 2)
             select_level = self.nowImg
+            
+            
             
 class Button():
     def __init__(self, image=None, pos=(0, 0), text_input="", font=None, base_color=(255, 255, 255), hovering_color=(255, 255, 255), width=260, height=80):
@@ -666,6 +727,7 @@ RandomBox_sprites = pygame.sprite.Group()
 road_blocks = pygame.sprite.Group()
 coin_sprites = pygame.sprite.Group()
 fuel_tank_sprites = pygame.sprite.Group()
+expl_sprites = pygame.sprite.Group()
 
 
 
@@ -679,7 +741,6 @@ mainmenu = 1
 running = True
 while (mainmenu != 0):
     running, mainmenu = main_menu(mainmenu)
-    #todo: 修改每一局承繼相同血量的問題
     if running:
         pygame.mixer.stop()
         
@@ -688,7 +749,7 @@ while (mainmenu != 0):
         all_sprites.add(player, layer = 2) 
             
         score = 0
-        score_increament = 0
+        score_increment = 0
         
         rocket_ammo = 0
         hp = 3
@@ -705,7 +766,7 @@ while (mainmenu != 0):
         spawnCoinTimer = 1000
         Coin_last_spawn = pygame.time.get_ticks()
         
-        genRoadblockTimer = 1500
+        genRoadblockTimer = 1000
         last_Roadblocks = pygame.time.get_ticks()
         
         genOppRiderTimer = 10000
@@ -734,175 +795,177 @@ while (mainmenu != 0):
         while running:
             clock.tick(FPS)
             now = pygame.time.get_ticks()
-            score += 0.1
-            score_increament += 1
             
-            #speed up
-            if(score_increament >= 15 * FPS):
-                accelerate += 1
-                score_increament = 0
+            if hp > 0 and player.gas > 0:
+                score += 0.1
+                score_increment += 0.1
             
-            #spawn vic
-            if now - last_now1 >= spawnVicTimer1: #spawn one vehicle
-                x = random.choice(RandomVicXPos1)
-                new_vics(x)
-                last_now1 = now
-        
-            if now - last_now2 >= spawnVicTimer2: #spawn mutiple vehicle
-        
-                spawn = random.randint(2,3)
-        
-                match spawn:
-                    case 2:
-                        tempList = random.choice(RandomVicXPos2)
-                        last_now2 = now
-                        for x in tempList:
-                            new_vics(x)
-                    
-                    case 3:
-                        tempList = random.choice(RandomVicXPos3)
-                        last_now2 = now
-                        for x in tempList:
-                            new_vics(x)
-        
-            #spawn RandomBox
-            if now - RandomBox_last_spawn >= spawnRandBoxTimer:
-                if random.random() > 0.7:
-                    x = random.choice(RandomBoxXPos1)
-                    new_RandomBox(x)
-                RandomBox_last_spawn = now
+                #speed up
+                if score_increment >= 500 * (1 + accelerate):
+                    accelerate += 1
+                    score_increment = 0
                 
-            #generate roadblocks
-            if now - last_Roadblocks >= genRoadblockTimer:
-                x = random.randint(1, 3)
-                
-                if x == 1:  #generate roadblock on the left side
-                    new_roadblock(0)
-                    last_Roadblocks = now
-                
-                elif x == 2:
-                    new_roadblock(WIDTH - 50)   #generate roadblock on the right side
-                    last_Roadblocks = now
-                    
-                else:   #not generate roadblock
-                    last_Roadblocks = now
-        
-            if now - last_fuel_spawn > 15000:  #A tank is generated every 15 seconds, the time can be adjusted as needed
-                new_fuel_tank()
-                last_fuel_spawn = now
-        
-            #Detect player collisions with fuel tanks
-            player_hit_fuel = pygame.sprite.spritecollide(player, fuel_tank_sprites, True)
-            for fuel in player_hit_fuel:
-                player.gas = 30  #Assume 30 is the maximum value of player fuel
-                get_gas_sound.play()
-        
-        
-                    
-            #generate opposite rider
-            if accelerate > 0 and now - last_oppositeRider >= genOppRiderTimer/accelerate:
-                new_oppsiteRider()
-                last_oppositeRider = now        
-                danger = True
-                Danger_sound.play()
-                start_dangerSign = pygame.time.get_ticks()
-                    
-            #spawn GoldCoin
-            if now - Coin_last_spawn >= spawnCoinTimer:
-                x = random.choice(RandomBoxXPos1)
-                new_Coin(x)
-                Coin_last_spawn = now
-                
-            #generate new background
-            background_manager.update()
-                    
-            #gas consumption
-            player.gas -= 0.015
-            if(player.gas <= 0):
-                running = False
-                
+                #spawn vic
+                if now - last_now1 >= spawnVicTimer1: #spawn one vehicle
+                    x = random.choice(RandomVicXPos1)
+                    last_now1 = now
+                    new_vics(x)
             
-            #Player collide with vehicles, roadblocks, and opposite riders
-            player_crash = pygame.sprite.spritecollide(player, all_obstacles, True)
+                if now - last_now2 >= spawnVicTimer2: #spawn mutiple vehicle
             
-            for crash in player_crash:
-                random.choice(expl_sounds).play()
-                expl = Explosion(crash.rect.center)
-                all_sprites.add(expl, layer = 2)
-                hp -= 1
+                    spawn = random.randint(2,3)
             
-            #Player collide with randomBox
-            player_hit_RandomBox = pygame.sprite.spritecollide(player, RandomBox_sprites, True)
+                    match spawn:
+                        case 2:
+                            tempList = random.choice(RandomVicXPos2)
+                            last_now2 = now
+                            for x in tempList:
+                                new_vics(x)
+                        
+                        case 3:
+                            tempList = random.choice(RandomVicXPos3)
+                            last_now2 = now
+                            for x in tempList:
+                                new_vics(x)
             
-            for hits in player_hit_RandomBox:
-                if hits.type == "RPG":
-                    rocket_ammo = 3
-                    player_get_RPG_sound.play()
-                
-                if hits.type == "Shield":
-                    new_Shield()
+                #spawn RandomBox
+                if now - RandomBox_last_spawn >= spawnRandBoxTimer:
+                    if random.random() > 0.7:
+                        x = random.choice(RandomBoxXPos1)
+                        new_RandomBox(x)
+                    RandomBox_last_spawn = now
                     
-                if hits.type == "Health":
-                    if hp < 3:
-                        hp += 1
-                    hp_gain_sound.play()
-                if hits.type == "Gas":
-                    player.gas = 30  
+                #generate roadblocks
+                if now - last_Roadblocks >= genRoadblockTimer:
+                    x = random.randint(1, 3)
+                    
+                    if x == 1:  #generate roadblock on the left side
+                        new_roadblock(20)
+                        last_Roadblocks = now
+                    
+                    elif x == 2:
+                        new_roadblock(WIDTH - 70)   #generate roadblock on the right side
+                        last_Roadblocks = now
+                        
+                    else:   #not generate roadblock
+                        last_Roadblocks = now
+            
+                if now - last_fuel_spawn > 15000:  #A tank is generated every 15 seconds, the time can be adjusted as needed
+                    new_fuel_tank()
+                    last_fuel_spawn = now
+            
+                #Detect player collisions with fuel tanks
+                player_hit_fuel = pygame.sprite.spritecollide(player, fuel_tank_sprites, True)
+                for fuel in player_hit_fuel:
+                    player.gas = 30  #Assume 30 is the maximum value of player fuel
                     get_gas_sound.play()
-            
-            #Player get a coin
-            player_get_coin = pygame.sprite.spritecollide(player, coin_sprites, True)
-            for get in player_get_coin:
-                get_coin_sound.play()
-                score += 100
-        
-            #hp check
-            if(hp < 2 and is_onFire == 0):
-                is_onFire = 1
-                random.choice(onFire_scream_sound).play()
-                play_onFire()
-        
-            if(hp > 1):
-                is_onFire = 0
-        
-            if(hp <= 0):
-                running = False
-        
-            #RPG destory vehicle
-            weapon_destroy = pygame.sprite.groupcollide(other_vics, player_weapon, True, True)
-            
-            for boom in weapon_destroy:
-                random.choice(expl_sounds).play()
-                expl = Explosion(boom.rect.center)
-                all_sprites.add(expl, layer = 2)
-        
-            weapon_destroy = pygame.sprite.groupcollide(road_blocks, player_weapon, True, True)
-            
-            for boom in weapon_destroy:
-                random.choice(expl_sounds).play()
-                expl = Explosion(boom.rect.center)
-                all_sprites.add(expl, layer = 2)
-            
-            #Shield destroy vehicle
-            shield_destroy = pygame.sprite.groupcollide(other_vics, player_shield, True, False)
-            for boom in shield_destroy:
-                random.choice(expl_sounds).play()
-                expl = Explosion(boom.rect.center)
-                all_sprites.add(expl)
+                        
+                #generate opposite rider
+                if accelerate > 1 and now - last_oppositeRider >= genOppRiderTimer/accelerate:
+                    new_oppsiteRider()
+                    last_oppositeRider = now        
+                    danger = True
+                    Danger_sound.play()
+                    start_dangerSign = pygame.time.get_ticks()
+                        
+                #spawn GoldCoin
+                if now - Coin_last_spawn >= spawnCoinTimer:
+                    x = random.choice(RandomBoxXPos1)
+                    new_Coin(x)
+                    Coin_last_spawn = now
+                    
+                #generate new background
+                background_manager.update()
+                        
+                #gas consumption
+                if hp > 0:
+                    player.gas -= 0.015
                 
-            shield_destroy = pygame.sprite.groupcollide(road_blocks, player_shield, True, False)
-            for boom in shield_destroy:
-                random.choice(expl_sounds).play()
-                expl = Explosion(boom.rect.center)
-                all_sprites.add(expl, layer = 2)
+                #Player collide with vehicles, roadblocks, and opposite riders
+                player_crash = pygame.sprite.spritecollide(player, all_obstacles, True)
+                
+                for crash in player_crash:
+                    random.choice(expl_sounds).play()
+                    expl = Explosion(crash.rect.center)
+                    all_sprites.add(expl, layer = 2)
+                    expl_sprites.add(expl)
+                    hp -= 1
+                
+                #Player collide with randomBox
+                player_hit_RandomBox = pygame.sprite.spritecollide(player, RandomBox_sprites, True)
+                
+                for hits in player_hit_RandomBox:
+                    if hits.type == "RPG":
+                        rocket_ammo = 3
+                        player_get_RPG_sound.play()
+                    
+                    if hits.type == "Shield":
+                        new_Shield()
+                        
+                    if hits.type == "Health":
+                        if hp < 3:
+                            hp += 1
+                        hp_gain_sound.play()
+                    if hits.type == "Gas":
+                        player.gas = 30  
+                        get_gas_sound.play()
+                
+                #Player get a coin
+                player_get_coin = pygame.sprite.spritecollide(player, coin_sprites, True)
+                for get in player_get_coin:
+                    get_coin_sound.play()
+                    score += 100
+                    score_increment += 100
             
-            #Opposite rider collide with other vehicles and roadblocks
-            opp_crash = pygame.sprite.groupcollide(opposite_riders, normal_obstacles, True, True)
-        
-            for crash in opp_crash:
-                random.choice(expl_sounds).play()
-                expl = Explosion(crash.rect.center)
-                all_sprites.add(expl, layer = 2)
+                #on fire statement
+                if hp < 2 and is_onFire == 0:
+                    is_onFire = 1
+                    random.choice(onFire_scream_sound).play()
+                    play_onFire()
+            
+                if hp > 1:
+                    is_onFire = 0
+            
+                #RPG destory vehicle
+                weapon_destroy = pygame.sprite.groupcollide(other_vics, player_weapon, True, True)
+                
+                for boom in weapon_destroy:
+                    random.choice(expl_sounds).play()
+                    expl = Explosion(boom.rect.center)
+                    all_sprites.add(expl, layer = 2)
+                    expl_sprites.add(expl)
+            
+                weapon_destroy = pygame.sprite.groupcollide(road_blocks, player_weapon, True, True)
+                
+                for boom in weapon_destroy:
+                    random.choice(expl_sounds).play()
+                    expl = Explosion(boom.rect.center)
+                    all_sprites.add(expl, layer = 2)
+                    expl_sprites.add(expl)
+                
+                #Shield destroy vehicle
+                shield_destroy = pygame.sprite.groupcollide(other_vics, player_shield, True, False)
+                for boom in shield_destroy:
+                    random.choice(expl_sounds).play()
+                    expl = Explosion(boom.rect.center)
+                    all_sprites.add(expl)
+                    expl_sprites.add(expl)
+                    
+                shield_destroy = pygame.sprite.groupcollide(road_blocks, player_shield, True, False)
+                for boom in shield_destroy:
+                    random.choice(expl_sounds).play()
+                    expl = Explosion(boom.rect.center)
+                    all_sprites.add(expl, layer = 2)
+                    expl_sprites.add(expl)
+                
+                #Opposite rider collide with other vehicles and roadblocks
+                opp_crash = pygame.sprite.groupcollide(opposite_riders, normal_obstacles, True, True)
+            
+                for crash in opp_crash:
+                    random.choice(expl_sounds).play()
+                    expl = Explosion(crash.rect.center)
+                    all_sprites.add(expl, layer = 2)
+                    expl_sprites.add(expl)
         
             #input
             for event in pygame.event.get():
@@ -913,28 +976,46 @@ while (mainmenu != 0):
                     if event.key == pygame.K_LCTRL:
                         player.shoot(rocket_ammo)
                         rocket_ammo -= 1
+
+                    if hp <= 0 or player.gas <= 0:    #當hp<=0或gas<=0，遊戲結束，按任意鍵回到menu
+                        #reset values
+                        is_onFire = 0
+                        rocket_ammo = 0
+                        hp = 3
+                        select_level = random.randint(0, 2)
+                        
+                        #delete all the sprites
+                        for every in all_sprites:
+                            every.clean()
+                        
+                        running = False
                     
             
             #game update
-            all_sprites.update()
+            if hp > 0 and player.gas > 0:
+                all_sprites.update()
+            else:
+                pygame.mixer.music.stop()   #gameover音樂待決定，如果用Never gonna give you up會太ㄎ一ㄤ嗎
+                #todo:浮現結算畫面
+                    
             #fuel_tank_sprites.update()
             #fuel_tank_sprites.draw(screen)
             
             
             #display
-            screen.fill(WHITE)
+            screen.fill(BLACK)
             all_sprites.draw(screen)
             draw_gas(screen, player.gas, 10, 10)
             draw_text(screen, str(int(score)), 18, WIDTH/2, 10)
             draw_hp(screen, hp)
             draw_RocketAmmo(screen, rocket_ammo)
             
-                
-            
             if now - start_dangerSign < dangerSignTimer and now - running_start_time > 5000:
                 draw_DangerSign(screen)
+                
             pygame.display.update()
-        time.sleep(1)
+            
+        #time.sleep(1)
         pygame.mixer.stop()
 
 pygame.quit()
