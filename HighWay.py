@@ -103,6 +103,7 @@ for i in range(3):
     background_imgs.append(pygame.image.load(os.path.join("img", f"backgroundvv-{i}.png")).convert())
 
 #load sound
+running_sound = pygame.mixer.Sound(os.path.join("Sounds", "Hey.mp3"))
 turning_sound = pygame.mixer.Sound(os.path.join("Sounds", "CarTurn.mp3"))
 turning_sound.set_volume(0.1)
 player_turning = pygame.mixer.Channel(0)
@@ -140,6 +141,12 @@ get_coin_sound.set_volume(0.1)
 Danger_sound = pygame.mixer.Sound(os.path.join("Sounds", "Danger.mp3"))
 
 get_gas_sound = pygame.mixer.Sound(os.path.join("Sounds", "getGas.mp3"))
+
+main_menu_sound = pygame.mixer.Sound(os.path.join("Sounds", "main_menu.mp3"))
+main_menu_sound.set_volume(0.8)
+
+button_click_sound = pygame.mixer.Sound(os.path.join("Sounds", "select.mp3"))
+button_click_sound.set_volume(0.8)
 
 #functions
 font_name = pygame.font.match_font("arial")#setting 
@@ -241,7 +248,52 @@ def new_fuel_tank():
 def new_background(pos, img):
     bg = Background(pos, img)
     all_sprites.add(bg, layer = 0)
+font_name = pygame.font.match_font("arial")#setting 
+def get_font(size): # Returns Press-Start-2P in the desired size
+    return pygame.font.Font("img/font.ttf", size)
 
+def main_menu(mainmenu):
+    main_menu_sound.play()
+
+    background_image = pygame.image.load(os.path.join("img", "BR-116Brazil.png")).convert()
+    background_image = pygame.transform.scale(background_image, (500, 700))
+    screen.blit(background_image, (0, 0))
+
+    while (mainmenu != 0):
+        MENU_MOUSE_POS = pygame.mouse.get_pos()
+    
+        MENU_TEXT = get_font(50).render("BR-116", True, "#b68f40")
+        MENU_RECT = MENU_TEXT.get_rect(center=(250, 130))
+    
+        PLAY_BUTTON = Button(image=pygame.image.load("img/Play Rect.png"), pos=(250, 430), 
+                            text_input="PLAY", font=get_font(25), base_color="White", hovering_color="#d7fcd4")
+        QUIT_BUTTON = Button(image=pygame.image.load("img/Quit Rect.png"), pos=(250, 540), 
+                            text_input="QUIT", font=get_font(25), base_color="White", hovering_color="#d7fcd4")
+    
+        screen.blit(MENU_TEXT, MENU_RECT)
+    
+        for button in [PLAY_BUTTON, QUIT_BUTTON]:
+            button.changeColor(MENU_MOUSE_POS)
+            button.update(screen)
+            
+        running = True
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                    pygame.mixer.stop()
+                    return False, 0
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if PLAY_BUTTON.checkForInput(MENU_MOUSE_POS):
+                    pygame.mixer.stop()
+                    button_click_sound.play()
+                    pygame.time.delay(300) #delay time for clicking music display
+                    return True, 1
+                if QUIT_BUTTON.checkForInput(MENU_MOUSE_POS):
+                    pygame.mixer.stop()
+                    button_click_sound.play()
+                    pygame.time.delay(300) #delay time for clicking music display
+                    return False, 0
+        pygame.display.update()
+        
 
     
 
@@ -562,6 +614,42 @@ class BackgroundManager:
             self.count = 0
             self.nowImg = random.randint(0, 2)
             select_level = self.nowImg
+            
+class Button():
+    def __init__(self, image=None, pos=(0, 0), text_input="", font=None, base_color=(255, 255, 255), hovering_color=(255, 255, 255), width=260, height=80):
+        self.image = image
+        self.x_pos = pos[0]
+        self.y_pos = pos[1]
+        self.font = font
+        self.base_color = base_color
+        self.hovering_color = hovering_color
+        self.text_input = text_input
+        self.text = self.font.render(self.text_input, True, self.base_color)
+
+        #if no image, create a rectangle
+        if self.image is None:
+            self.image = pygame.Surface((width, height))
+            self.image.fill(self.base_color)
+        else:
+            #stansform the image
+            self.image = pygame.transform.scale(self.image, (width, height))
+        
+        # button size
+        self.rect = self.image.get_rect(center=(self.x_pos, self.y_pos))
+        self.text_rect = self.text.get_rect(center=self.rect.center)
+    
+    def update(self, screen):
+        screen.blit(self.image, self.rect)
+        screen.blit(self.text, self.text_rect)
+
+    def checkForInput(self, position):
+        return self.rect.collidepoint(position)
+
+    def changeColor(self, position):
+        if self.rect.collidepoint(position):
+            self.text = self.font.render(self.text_input, True, self.hovering_color)
+        else:
+            self.text = self.font.render(self.text_input, True, self.base_color)
 
 
 all_sprites = pygame.sprite.LayeredUpdates()
@@ -576,253 +664,271 @@ road_blocks = pygame.sprite.Group()
 coin_sprites = pygame.sprite.Group()
 fuel_tank_sprites = pygame.sprite.Group()
 
-player = Player()
-all_sprites.add(player, layer = 2)
 
 
 
 #game loop
 
-pygame.mixer.music.play()
 
+player = Player()
+
+mainmenu = 1
 running = True
-running_start_time = pygame.time.get_ticks()
-score = 0
-score_increament = 0
-
-rocket_ammo = 0
-hp = 3
-is_onFire = 0
-
-spawnVicTimer1 = 3000
-spawnVicTimer2 = 4500
-last_now1 = pygame.time.get_ticks()
-last_now2 = pygame.time.get_ticks()
-
-spawnRandBoxTimer = 2000
-RandomBox_last_spawn = pygame.time.get_ticks()
-
-spawnCoinTimer = 1000
-Coin_last_spawn = pygame.time.get_ticks()
-
-genRoadblockTimer = 1500
-last_Roadblocks = pygame.time.get_ticks()
-
-genOppRiderTimer = 10000
-last_oppositeRider = pygame.time.get_ticks()
-
-dangerSignTimer = 1000
-start_dangerSign = pygame.time.get_ticks()
-danger = False
-
-
-new_background(0, select_level)
-background_manager = BackgroundManager(all_sprites, select_level)
-
-while running:
-    
-    clock.tick(FPS)
-    now = pygame.time.get_ticks()
-    score += 0.1
-    score_increament += 1
-    
-    #speed up
-    if(score_increament >= 15 * FPS):
-        accelerate += 1
+while (mainmenu != 0):
+    running, mainmenu = main_menu(mainmenu)
+    #todo: 修改每一局承繼相同血量的問題
+    if running:
+        pygame.mixer.music.set_volume(0)
+        running_sound.play()
+        running_start_time = pygame.time.get_ticks()
+        
+        all_sprites.add(player, layer = 2) 
+            
+        score = 0
         score_increament = 0
-    
-    #spawn vic
-    if now - last_now1 >= spawnVicTimer1: #spawn one vehicle
-        x = random.choice(RandomVicXPos1)
-        new_vics(x)
-        last_now1 = now
-
-    if now - last_now2 >= spawnVicTimer2: #spawn mutiple vehicle
-
-        spawn = random.randint(2,3)
-
-        match spawn:
-            case 2:
-                tempList = random.choice(RandomVicXPos2)
-                last_now2 = now
-                for x in tempList:
-                    new_vics(x)
-            
-            case 3:
-                tempList = random.choice(RandomVicXPos3)
-                last_now2 = now
-                for x in tempList:
-                    new_vics(x)
-
-    #spawn RandomBox
-    if now - RandomBox_last_spawn >= spawnRandBoxTimer:
-        if random.random() > 0.7:
-            x = random.choice(RandomBoxXPos1)
-            new_RandomBox(x)
-        RandomBox_last_spawn = now
         
-    #generate roadblocks
-    if now - last_Roadblocks >= genRoadblockTimer:
-        x = random.randint(1, 3)
-        
-        if x == 1:  #generate roadblock on the left side
-            new_roadblock(0)
-            last_Roadblocks = now
-        
-        elif x == 2:
-            new_roadblock(WIDTH - 50)   #generate roadblock on the right side
-            last_Roadblocks = now
-            
-        else:   #not generate roadblock
-            last_Roadblocks = now
-
-    if now - last_fuel_spawn > 15000:  #A tank is generated every 15 seconds, the time can be adjusted as needed
-        new_fuel_tank()
-        last_fuel_spawn = now
-
-    #Detect player collisions with fuel tanks
-    player_hit_fuel = pygame.sprite.spritecollide(player, fuel_tank_sprites, True)
-    for fuel in player_hit_fuel:
-        player.gas = 30  #Assume 30 is the maximum value of player fuel
-        get_gas_sound.play()
-
-
-            
-    #generate opposite rider
-    if accelerate > 0 and now - last_oppositeRider >= genOppRiderTimer/accelerate:
-        new_oppsiteRider()
-        last_oppositeRider = now        
-        danger = True
-        Danger_sound.play()
-        start_dangerSign = pygame.time.get_ticks()
-            
-    #spawn GoldCoin
-    if now - Coin_last_spawn >= spawnCoinTimer:
-        x = random.choice(RandomBoxXPos1)
-        new_Coin(x)
-        Coin_last_spawn = now
-        
-    #generate new background
-    background_manager.update()
-            
-    #gas consumption
-    player.gas -= 0.015
-    if(player.gas <= 0):
-        running = False
-        
-    
-    #Player collide with vehicles, roadblocks, and opposite riders
-    player_crash = pygame.sprite.spritecollide(player, all_obstacles, True)
-    
-    for crash in player_crash:
-        random.choice(expl_sounds).play()
-        expl = Explosion(crash.rect.center)
-        all_sprites.add(expl, layer = 2)
-        hp -= 1
-    
-    #Player collide with randomBox
-    player_hit_RandomBox = pygame.sprite.spritecollide(player, RandomBox_sprites, True)
-    
-    for hits in player_hit_RandomBox:
-        if hits.type == "RPG":
-            rocket_ammo = 3
-            player_get_RPG_sound.play()
-        
-        if hits.type == "Shield":
-            new_Shield()
-            
-        if hits.type == "Health":
-            if hp < 3:
-                hp += 1
-            hp_gain_sound.play()
-        if hits.type == "Gas":
-            player.gas = 30  
-            get_gas_sound.play()
-    
-    #Player get a coin
-    player_get_coin = pygame.sprite.spritecollide(player, coin_sprites, True)
-    for get in player_get_coin:
-        get_coin_sound.play()
-        score += 100
-
-    #hp check
-    if(hp < 2 and is_onFire == 0):
-        is_onFire = 1
-        random.choice(onFire_scream_sound).play()
-        play_onFire()
-
-    if(hp > 1):
+        rocket_ammo = 0
+        hp = 3
         is_onFire = 0
-
-    if(hp <= 0):
-        running = False
-
-    #RPG destory vehicle
-    weapon_destroy = pygame.sprite.groupcollide(other_vics, player_weapon, True, True)
-    
-    for boom in weapon_destroy:
-        random.choice(expl_sounds).play()
-        expl = Explosion(boom.rect.center)
-        all_sprites.add(expl, layer = 2)
-
-    weapon_destroy = pygame.sprite.groupcollide(road_blocks, player_weapon, True, True)
-    
-    for boom in weapon_destroy:
-        random.choice(expl_sounds).play()
-        expl = Explosion(boom.rect.center)
-        all_sprites.add(expl, layer = 2)
-    
-    #Shield destroy vehicle
-    shield_destroy = pygame.sprite.groupcollide(other_vics, player_shield, True, False)
-    for boom in shield_destroy:
-        random.choice(expl_sounds).play()
-        expl = Explosion(boom.rect.center)
-        all_sprites.add(expl)
         
-    shield_destroy = pygame.sprite.groupcollide(road_blocks, player_shield, True, False)
-    for boom in shield_destroy:
-        random.choice(expl_sounds).play()
-        expl = Explosion(boom.rect.center)
-        all_sprites.add(expl, layer = 2)
-    
-    #Opposite rider collide with other vehicles and roadblocks
-    opp_crash = pygame.sprite.groupcollide(opposite_riders, normal_obstacles, True, True)
+        spawnVicTimer1 = 3000
+        spawnVicTimer2 = 4500
+        last_now1 = pygame.time.get_ticks()
+        last_now2 = pygame.time.get_ticks()
+        
+        spawnRandBoxTimer = 2000
+        RandomBox_last_spawn = pygame.time.get_ticks()
+        
+        spawnCoinTimer = 1000
+        Coin_last_spawn = pygame.time.get_ticks()
+        
+        genRoadblockTimer = 1500
+        last_Roadblocks = pygame.time.get_ticks()
+        
+        genOppRiderTimer = 10000
+        last_oppositeRider = pygame.time.get_ticks()
+        
+        dangerSignTimer = 1000
+        start_dangerSign = pygame.time.get_ticks()
+        danger = False
+        
+        
+        new_background(0, select_level)
+        background_manager = BackgroundManager(all_sprites, select_level)
 
-    for crash in opp_crash:
-        random.choice(expl_sounds).play()
-        expl = Explosion(crash.rect.center)
-        all_sprites.add(expl, layer = 2)
-
-    #input
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-        elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_LCTRL:
-                player.shoot(rocket_ammo)
-                rocket_ammo -= 1
+        player.image = pygame.transform.scale(player_img, (50,100))
+        player.image.set_colorkey(BLACK)
+        player.rect = player.image.get_rect()
+        player.rect.centerx = WIDTH/2
+        player.rect.bottom = HEIGHT - 10
+        player.gas = 30
+        player.speedx = 8
+        player.speedy = 8
             
-    
-    #game update
-    all_sprites.update()
-    #fuel_tank_sprites.update()
-    #fuel_tank_sprites.draw(screen)
-    
-    
-    #display
-    screen.fill(WHITE)
-    all_sprites.draw(screen)
-    draw_gas(screen, player.gas, 10, 10)
-    draw_text(screen, str(int(score)), 18, WIDTH/2, 10)
-    draw_hp(screen, hp)
-    draw_RocketAmmo(screen, rocket_ammo)
-    
+        while running:
+            clock.tick(FPS)
+            now = pygame.time.get_ticks()
+            score += 0.1
+            score_increament += 1
+            
+            #speed up
+            if(score_increament >= 15 * FPS):
+                accelerate += 1
+                score_increament = 0
+            
+            #spawn vic
+            if now - last_now1 >= spawnVicTimer1: #spawn one vehicle
+                x = random.choice(RandomVicXPos1)
+                new_vics(x)
+                last_now1 = now
         
-    
-    if now - start_dangerSign < dangerSignTimer and now - running_start_time > 5000:
-        draw_DangerSign(screen)
-
-    pygame.display.update()
-
+            if now - last_now2 >= spawnVicTimer2: #spawn mutiple vehicle
+        
+                spawn = random.randint(2,3)
+        
+                match spawn:
+                    case 2:
+                        tempList = random.choice(RandomVicXPos2)
+                        last_now2 = now
+                        for x in tempList:
+                            new_vics(x)
+                    
+                    case 3:
+                        tempList = random.choice(RandomVicXPos3)
+                        last_now2 = now
+                        for x in tempList:
+                            new_vics(x)
+        
+            #spawn RandomBox
+            if now - RandomBox_last_spawn >= spawnRandBoxTimer:
+                if random.random() > 0.7:
+                    x = random.choice(RandomBoxXPos1)
+                    new_RandomBox(x)
+                RandomBox_last_spawn = now
+                
+            #generate roadblocks
+            if now - last_Roadblocks >= genRoadblockTimer:
+                x = random.randint(1, 3)
+                
+                if x == 1:  #generate roadblock on the left side
+                    new_roadblock(0)
+                    last_Roadblocks = now
+                
+                elif x == 2:
+                    new_roadblock(WIDTH - 50)   #generate roadblock on the right side
+                    last_Roadblocks = now
+                    
+                else:   #not generate roadblock
+                    last_Roadblocks = now
+        
+            if now - last_fuel_spawn > 15000:  #A tank is generated every 15 seconds, the time can be adjusted as needed
+                new_fuel_tank()
+                last_fuel_spawn = now
+        
+            #Detect player collisions with fuel tanks
+            player_hit_fuel = pygame.sprite.spritecollide(player, fuel_tank_sprites, True)
+            for fuel in player_hit_fuel:
+                player.gas = 30  #Assume 30 is the maximum value of player fuel
+                get_gas_sound.play()
+        
+        
+                    
+            #generate opposite rider
+            if accelerate > 0 and now - last_oppositeRider >= genOppRiderTimer/accelerate:
+                new_oppsiteRider()
+                last_oppositeRider = now        
+                danger = True
+                Danger_sound.play()
+                start_dangerSign = pygame.time.get_ticks()
+                    
+            #spawn GoldCoin
+            if now - Coin_last_spawn >= spawnCoinTimer:
+                x = random.choice(RandomBoxXPos1)
+                new_Coin(x)
+                Coin_last_spawn = now
+                
+            #generate new background
+            background_manager.update()
+                    
+            #gas consumption
+            player.gas -= 0.015
+            if(player.gas <= 0):
+                running = False
+                
+            
+            #Player collide with vehicles, roadblocks, and opposite riders
+            player_crash = pygame.sprite.spritecollide(player, all_obstacles, True)
+            
+            for crash in player_crash:
+                random.choice(expl_sounds).play()
+                expl = Explosion(crash.rect.center)
+                all_sprites.add(expl, layer = 2)
+                hp -= 1
+            
+            #Player collide with randomBox
+            player_hit_RandomBox = pygame.sprite.spritecollide(player, RandomBox_sprites, True)
+            
+            for hits in player_hit_RandomBox:
+                if hits.type == "RPG":
+                    rocket_ammo = 3
+                    player_get_RPG_sound.play()
+                
+                if hits.type == "Shield":
+                    new_Shield()
+                    
+                if hits.type == "Health":
+                    if hp < 3:
+                        hp += 1
+                    hp_gain_sound.play()
+                if hits.type == "Gas":
+                    player.gas = 30  
+                    get_gas_sound.play()
+            
+            #Player get a coin
+            player_get_coin = pygame.sprite.spritecollide(player, coin_sprites, True)
+            for get in player_get_coin:
+                get_coin_sound.play()
+                score += 100
+        
+            #hp check
+            if(hp < 2 and is_onFire == 0):
+                is_onFire = 1
+                random.choice(onFire_scream_sound).play()
+                play_onFire()
+        
+            if(hp > 1):
+                is_onFire = 0
+        
+            if(hp <= 0):
+                running = False
+        
+            #RPG destory vehicle
+            weapon_destroy = pygame.sprite.groupcollide(other_vics, player_weapon, True, True)
+            
+            for boom in weapon_destroy:
+                random.choice(expl_sounds).play()
+                expl = Explosion(boom.rect.center)
+                all_sprites.add(expl, layer = 2)
+        
+            weapon_destroy = pygame.sprite.groupcollide(road_blocks, player_weapon, True, True)
+            
+            for boom in weapon_destroy:
+                random.choice(expl_sounds).play()
+                expl = Explosion(boom.rect.center)
+                all_sprites.add(expl, layer = 2)
+            
+            #Shield destroy vehicle
+            shield_destroy = pygame.sprite.groupcollide(other_vics, player_shield, True, False)
+            for boom in shield_destroy:
+                random.choice(expl_sounds).play()
+                expl = Explosion(boom.rect.center)
+                all_sprites.add(expl)
+                
+            shield_destroy = pygame.sprite.groupcollide(road_blocks, player_shield, True, False)
+            for boom in shield_destroy:
+                random.choice(expl_sounds).play()
+                expl = Explosion(boom.rect.center)
+                all_sprites.add(expl, layer = 2)
+            
+            #Opposite rider collide with other vehicles and roadblocks
+            opp_crash = pygame.sprite.groupcollide(opposite_riders, normal_obstacles, True, True)
+        
+            for crash in opp_crash:
+                random.choice(expl_sounds).play()
+                expl = Explosion(crash.rect.center)
+                all_sprites.add(expl, layer = 2)
+        
+            #input
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                    mainmenu = 0
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_LCTRL:
+                        player.shoot(rocket_ammo)
+                        rocket_ammo -= 1
+                    
+            
+            #game update
+            all_sprites.update()
+            #fuel_tank_sprites.update()
+            #fuel_tank_sprites.draw(screen)
+            
+            
+            #display
+            screen.fill(WHITE)
+            all_sprites.draw(screen)
+            draw_gas(screen, player.gas, 10, 10)
+            draw_text(screen, str(int(score)), 18, WIDTH/2, 10)
+            draw_hp(screen, hp)
+            draw_RocketAmmo(screen, rocket_ammo)
+            
+                
+            
+            if now - start_dangerSign < dangerSignTimer and now - running_start_time > 5000:
+                draw_DangerSign(screen)
+            pygame.display.update()
+        time.sleep(1)
+        pygame.mixer.stop()
 
 pygame.quit()
