@@ -301,7 +301,10 @@ def main_menu(mainmenu):
                     return False, 0
         pygame.display.update()
         
-
+def display_final_score(screen, score):
+    draw_text(screen, f"SCORE:{int(score)}", 50, WIDTH // 2, HEIGHT // 2)
+    pygame.display.update()
+    time.sleep(5)  # 顯示得分5秒鐘
     
 
 
@@ -1022,6 +1025,7 @@ while (mainmenu != 0):
             pygame.display.update()
             
         #time.sleep(1)
+        display_final_score(screen, score)
         pygame.mixer.stop()
 
 pygame.quit()
