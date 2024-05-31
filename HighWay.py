@@ -4,8 +4,6 @@ import random
 import time
 import sys
 
-import pygame.locals
-
 WIDTH = 500
 HEIGHT = 700
 FPS = 100
@@ -57,6 +55,12 @@ player_BubbleShield.set_colorkey(BLACK)
 otherVic_imgs = []
 for i in range(7):
     otherVic_imgs.append(pygame.image.load(os.path.join("img", f"Vic{i}.png")).convert())
+    
+animal_anim = []
+for i in range(4):
+    animal_img = pygame.image.load(os.path.join("img", f"animal{i}.png")).convert()
+    animal_img.set_colorkey(BLACK)
+    animal_anim.append(pygame.transform.scale(animal_img, (50, 120)))
 
 RandomBox_img = pygame.image.load(os.path.join("img", "RandomBox.png")).convert()
 
@@ -81,8 +85,6 @@ for i in range(9):
     road_block = pygame.image.load(os.path.join("img", f"roadblockvv-{i}.png")).convert()
     road_block.set_colorkey(ROADBLOCK_FILTER)
     roadblock_img.append(road_block)
-
-
 
 HP_img = pygame.image.load(os.path.join("img", "hp.png")).convert()
 HP_img = pygame.transform.scale(HP_img, (20, 20))
@@ -131,7 +133,6 @@ onFire_scream_sound = []
 for i in range(7):
     onFire_scream_sound.append(pygame.mixer.Sound(os.path.join("Sounds", f"onFire{i}.wav")))
 
-
 pygame.mixer.music.load(os.path.join("Sounds", "BGM0.mp3"))
 pygame.mixer.music.queue(os.path.join("Sounds", "BGM2.mp3"))
 
@@ -149,6 +150,11 @@ main_menu_sound.set_volume(0.8)
 
 button_click_sound = pygame.mixer.Sound(os.path.join("Sounds", "select.mp3"))
 button_click_sound.set_volume(0.8)
+
+end_sound = pygame.mixer.Sound(os.path.join("Sounds", "end.wav"))
+end_sound.set_volume(0.6)
+end_play = pygame.mixer.Channel(3)
+
 
 #functions
 font_name = pygame.font.match_font("arial")#setting 
@@ -301,11 +307,21 @@ def main_menu(mainmenu):
                     return False, 0
         pygame.display.update()
         
-def display_final_score(screen, score):
-    draw_text(screen, f"SCORE:{int(score)}", 50, WIDTH // 2, HEIGHT // 2)
-    pygame.display.update()
-    time.sleep(5)  # 顯示得分5秒鐘
+def display_final_score(screen, score, best):
+    if end_play.get_busy() == False:
+        end_sound.play()
     
+    rect_width = WIDTH - 60
+    rect_height = 200
+    rect_x = 30
+    rect_y = HEIGHT / 2 - 100
+    pygame.draw.rect(screen, (255, 242, 0), (rect_x, rect_y, rect_width, rect_height))
+    
+    draw_text(screen, f"SCORE: {int(score)}", 50, WIDTH / 2, HEIGHT / 2 - 65)
+    draw_text(screen, f"BEST: {int(best)}", 20, WIDTH / 2, HEIGHT / 2 - 5)
+    draw_text(screen, f"[PRESS ANY KEY TO RETURN TO THE MAIN MENU]", 20, WIDTH / 2, HEIGHT / 2 + 50)
+    
+    pygame.display.update()
 
 
 #class
@@ -436,12 +452,25 @@ class Player_onFire(pygame.sprite.Sprite):
 class Vehicle(pygame.sprite.Sprite):
     def __init__(self, x):
         pygame.sprite.Sprite.__init__(self)
-        self.image = pygame.transform.scale(random.choice(otherVic_imgs), (50, 100))
+        self.appearance = random.random()
+        if self.appearance < 0.05:
+            self.init_frame = 0
+            self.frame = self.init_frame
+            self.image = animal_anim[self.init_frame]
+        elif self.appearance < 0.1:
+            self.init_frame = 2
+            self.frame = self.init_frame
+            self.image = animal_anim[self.init_frame]
+        else:
+            self.image = pygame.transform.scale(random.choice(otherVic_imgs), (50, 100))
+            
         self.image.set_colorkey(BLACK)
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.bottom = random.randrange(-180, -150)
         self.speedy = 2
+        self.last_update = pygame.time.get_ticks()
+        self.frame_rate = 80
     
     def clean(self):
         self.kill()
@@ -451,6 +480,21 @@ class Vehicle(pygame.sprite.Sprite):
         
         if self.rect.top > HEIGHT + 100:
             self.kill()
+            
+        if self.appearance < 0.1:    
+            now = pygame.time.get_ticks()
+            if now - self.last_update > self.frame_rate:
+                self.last_update = now
+                self.frame += 1
+                
+                if self.frame > self.init_frame + 1:
+                    self.frame = self.init_frame
+                    
+                self.image = animal_anim[self.frame]
+                center = self.rect.center
+                self.rect = self.image.get_rect()
+                self.rect.center = center
+            
      
             
 
@@ -740,6 +784,8 @@ expl_sprites = pygame.sprite.Group()
 
 
 player = Player()
+global best
+best = 0.0
 
 mainmenu = 1
 running = True
@@ -985,18 +1031,18 @@ while (mainmenu != 0):
                     if event.key == pygame.K_LCTRL:
                         player.shoot(rocket_ammo)
                         rocket_ammo -= 1
-
-                    if hp <= 0 or player.gas <= 0:    #當hp<=0或gas<=0，遊戲結束，按任意鍵回到menu
+                        
+                    if hp <= 0 or player.gas <= 0:  #當hp<=0或gas<=0，遊戲結束，按任意鍵回到menu
                         #reset values
                         is_onFire = 0
                         rocket_ammo = 0
                         hp = 3
                         select_level = random.randint(0, 2)
-                        
+                            
                         #delete all the sprites
                         for every in all_sprites:
                             every.clean()
-                        
+                            
                         running = False
                     
             
@@ -1004,28 +1050,31 @@ while (mainmenu != 0):
             if hp > 0 and player.gas > 0:
                 all_sprites.update()
             else:
-                pygame.mixer.music.stop()   #gameover音樂待決定，如果用Never gonna give you up會太ㄎ一ㄤ嗎
-                #todo:浮現結算畫面
-                    
-            #fuel_tank_sprites.update()
-            #fuel_tank_sprites.draw(screen)
-            
+                pygame.mixer.music.stop()
+                best = max(score, best)
+                
             
             #display
-            screen.fill(BLACK)
-            all_sprites.draw(screen)
-            draw_gas(screen, player.gas, 10, 10)
-            draw_text(screen, str(int(score)), 18, WIDTH/2, 10)
-            draw_hp(screen, hp)
-            draw_RocketAmmo(screen, rocket_ammo)
-            
-            if now - start_dangerSign < dangerSignTimer and now - running_start_time > 5000:
-                draw_DangerSign(screen)
+            if hp > 0 and player.gas > 0:
+                screen.fill(BLACK)
+                all_sprites.draw(screen)
+                draw_gas(screen, player.gas, 10, 10)
+                draw_text(screen, str(int(score)), 18, WIDTH/2, 10)
+                draw_hp(screen, hp)
+                draw_RocketAmmo(screen, rocket_ammo)
                 
-            pygame.display.update()
+                if now - start_dangerSign < dangerSignTimer and now - running_start_time > 5000:
+                    draw_DangerSign(screen)
+                    
+                pygame.display.update()
+            else:
+                screen.fill(BLACK)
+                all_sprites.draw(screen)
+                draw_gas(screen, player.gas, 10, 10)
+                draw_hp(screen, hp)
+                draw_RocketAmmo(screen, rocket_ammo)
+                display_final_score(screen, score, best)
             
-        #time.sleep(1)
-        display_final_score(screen, score)
         pygame.mixer.stop()
 
 pygame.quit()
