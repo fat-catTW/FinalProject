@@ -57,7 +57,7 @@ for i in range(7):
     otherVic_imgs.append(pygame.image.load(os.path.join("img", f"Vic{i}.png")).convert())
     
 animal_anim = []
-for i in range(4):
+for i in range(6):
     animal_img = pygame.image.load(os.path.join("img", f"animal{i}.png")).convert()
     animal_img.set_colorkey(BLACK)
     animal_anim.append(pygame.transform.scale(animal_img, (50, 120)))
@@ -453,12 +453,16 @@ class Vehicle(pygame.sprite.Sprite):
     def __init__(self, x):
         pygame.sprite.Sprite.__init__(self)
         self.appearance = random.random()
-        if self.appearance < 0.05:
+        if self.appearance < 0.03:
             self.init_frame = 0
             self.frame = self.init_frame
             self.image = animal_anim[self.init_frame]
-        elif self.appearance < 0.1:
+        elif self.appearance < 0.06:
             self.init_frame = 2
+            self.frame = self.init_frame
+            self.image = animal_anim[self.init_frame]
+        elif self.appearance < 0.09:
+            self.init_frame = 4
             self.frame = self.init_frame
             self.image = animal_anim[self.init_frame]
         else:
@@ -481,7 +485,7 @@ class Vehicle(pygame.sprite.Sprite):
         if self.rect.top > HEIGHT + 100:
             self.kill()
             
-        if self.appearance < 0.1:    
+        if self.appearance < 0.09:    
             now = pygame.time.get_ticks()
             if now - self.last_update > self.frame_rate:
                 self.last_update = now
