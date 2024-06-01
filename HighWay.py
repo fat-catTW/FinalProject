@@ -453,6 +453,8 @@ class Vehicle(pygame.sprite.Sprite):
     def __init__(self, x):
         pygame.sprite.Sprite.__init__(self)
         self.appearance = random.random()
+        if select_level == 2:
+            self.appearance = 1
         if self.appearance < 0.03:
             self.init_frame = 0
             self.frame = self.init_frame
