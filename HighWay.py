@@ -73,7 +73,6 @@ RPG_remain3.set_colorkey(BLACK)
 RPG_remain2.set_colorkey(BLACK)
 RPG_remain1.set_colorkey(BLACK)
 
-
 expl_anim = []
 for i in range(9):
     expl_img = pygame.image.load(os.path.join("img", f"expl{i}.png")).convert()
@@ -263,9 +262,10 @@ def get_font(size): # Returns Press-Start-2P in the desired size
 
 def main_menu(mainmenu):
     pygame.mixer.music.stop()
-    global accelerate, is_shield
+    global accelerate, is_shield, update_score
     accelerate = 0
     is_shield = False
+    update_score = False
     main_menu_sound.play()
 
     background_image = pygame.image.load(os.path.join("img", "BR-116Brazil.png")).convert()
@@ -307,21 +307,58 @@ def main_menu(mainmenu):
                     return False, 0
         pygame.display.update()
         
-def display_final_score(screen, score, best):
+def display_final_score(screen, score):
     if end_play.get_busy() == False:
         end_sound.play()
+        
+    scores = read_high_scores()
     
     rect_width = WIDTH - 60
-    rect_height = 200
+    rect_height = 300
     rect_x = 30
-    rect_y = HEIGHT / 2 - 100
+    rect_y = HEIGHT / 2 - 150
     pygame.draw.rect(screen, (255, 242, 0), (rect_x, rect_y, rect_width, rect_height))
     
-    draw_text(screen, f"SCORE: {int(score)}", 50, WIDTH / 2, HEIGHT / 2 - 65)
-    draw_text(screen, f"BEST: {int(best)}", 20, WIDTH / 2, HEIGHT / 2 - 5)
-    draw_text(screen, f"[PRESS ANY KEY TO RETURN TO THE MAIN MENU]", 20, WIDTH / 2, HEIGHT / 2 + 50)
+    draw_text(screen, f"SCORE: {int(score)}", 50, WIDTH / 2, HEIGHT / 2 - 115)
+    
+    i = 0
+    for high_score in scores:
+        if i == 0:
+            draw_text(screen, f"1st: {high_score}", 20, WIDTH / 2, HEIGHT / 2 - 30)
+        elif i == 1:
+            draw_text(screen, f"2nd: {high_score}", 20, WIDTH / 2, HEIGHT / 2 + 10)
+        elif i == 2:
+            draw_text(screen, f"3rd: {high_score}", 20, WIDTH / 2, HEIGHT / 2 + 50)
+        i += 1
+        
+    draw_text(screen, f"[PRESS ANY KEY TO RETURN TO THE MAIN MENU]", 20, WIDTH / 2, HEIGHT / 2 + 100)
     
     pygame.display.update()
+    
+def read_high_scores():
+    with open('./high_scores.txt', 'r') as file:
+        scores = [int(line.strip()) for line in file]
+    return scores
+
+def write_high_scores(scores):
+    with open('./high_scores.txt', 'w') as file:
+        for score in scores:
+            file.write(f"{score}\n")
+
+def update_high_scores(new_score):
+    scores = read_high_scores()
+    new_score = int(new_score)
+
+    if scores == [0, 0, 0]:
+        scores[0] = new_score
+    else:
+        if len(scores) < 3 or new_score > min(scores):
+            scores.append(new_score)
+            scores = sorted(scores, reverse=True)
+            while len(scores) < 3:
+                scores.append(0)
+    
+    write_high_scores(scores[:3])
 
 
 #class
@@ -788,13 +825,11 @@ expl_sprites = pygame.sprite.Group()
 
 #game loop
 
-
 player = Player()
-global best
-best = 0.0
 
 mainmenu = 1
 running = True
+
 while (mainmenu != 0):
     running, mainmenu = main_menu(mainmenu)
     if running:
@@ -1057,7 +1092,9 @@ while (mainmenu != 0):
                 all_sprites.update()
             else:
                 pygame.mixer.music.stop()
-                best = max(score, best)
+                if update_score == False:
+                    update_high_scores(score)
+                    update_score = True
                 
             
             #display
@@ -1079,7 +1116,7 @@ while (mainmenu != 0):
                 draw_gas(screen, player.gas, 10, 10)
                 draw_hp(screen, hp)
                 draw_RocketAmmo(screen, rocket_ammo)
-                display_final_score(screen, score, best)
+                display_final_score(screen, score)
             
         pygame.mixer.stop()
 
