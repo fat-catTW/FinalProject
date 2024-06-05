@@ -1,3 +1,9 @@
+Distribution of work:
+
+Art and pictures:王家瑋、許博俊
+Coding: 蕭昌沅 、黃佳玟、曾翊維
+UI:戴靖芳
+
 Current state:
 
 Player:
