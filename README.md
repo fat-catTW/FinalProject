@@ -1,8 +1,7 @@
-Distribution of work:
-
-Art and pictures: 412910008王家瑋、411410028許博俊
-Coding: 411530010蕭昌沅 、411530047黃佳玟、411210004曾翊維
-UI: 411410026戴靖芳
+Distribution of work:  
+Art and pictures: 412910008王家瑋、411410028許博俊  
+Coding: 411530010蕭昌沅 、411530047黃佳玟、411210004曾翊維  
+UI: 411410026戴靖芳  
 
 
 Current state:
